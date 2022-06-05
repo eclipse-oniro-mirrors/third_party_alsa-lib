@@ -38,6 +38,7 @@ config("alsa_lib_config") {
     "-Wno-tautological-constant-out-of-range-compare",
     "-Wno-implicit-fallthrough",
     "-Wno-error",
+    "-D_GNU_SOURCE",
     "-DHAVE_CONFIG_H",
   ]
 
@@ -163,23 +164,7 @@ ohos_source_set("alsa_lib_dynamic") {
     "{target_gen_dir}/include/",
   ]
 
-  deps = [ ":gen_config_header" ]
-
   configs = [ ":alsa_lib_config" ]
-}
-
-action("gen_config_header") {
-  script = "//third_party/alsa-lib/ohos_build_config.sh"
-
-  args = [ rebase_path("//third_party/alsa-lib", root_build_dir) ]
-
-  outputs = [
-    "${target_gen_dir}/include/config.h",
-    "${target_gen_dir}/include/asoundlib.h",
-    "${target_gen_dir}/src/control/ctl_symbols_list.c",
-    "${target_gen_dir}/src/pcm/pcm_symbols_list.c",
-    "${target_gen_dir}/include/alsa",
-  ]
 }
 
 ohos_shared_library("libasound") {

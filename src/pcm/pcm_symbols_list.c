@@ -1,5 +1,5 @@
 /*
- *  ALSA lib header file include/version.h
+ *  ALSA lib C file pcm_symbols_list.c
  *  Copyright (c) 2022 Huawei Device Co., Ltd.
  *
  *   This library is free software; you can redistribute it and/or modify
@@ -18,17 +18,30 @@
  *
  */
 
-#ifndef __ALSA_VERSION_H
-#define __ALSA_VERSION_H
-
-#define SND_LIB_MAJOR		1 /**< major number of library version */
-#define SND_LIB_MINOR		2 /**< minor number of library version */
-#define SND_LIB_SUBMINOR	6 /**< subminor number of library version */
-#define SND_LIB_EXTRAVER	1000000 /**< extra version number, used mainly for betas */
-/** library version */
-#define SND_LIB_VER(maj, min, sub) (((maj)<<16)|((min)<<8)|(sub))
-#define SND_LIB_VERSION SND_LIB_VER(SND_LIB_MAJOR, SND_LIB_MINOR, SND_LIB_SUBMINOR)
-/** library version (string) */
-#define SND_LIB_VERSION_STR	"1.2.6"
-
-#endif /* __ALSA_VERSION_H */
+&_snd_module_pcm_copy,
+&_snd_module_pcm_linear,
+&_snd_module_pcm_route,
+&_snd_module_pcm_mulaw,
+&_snd_module_pcm_alaw,
+&_snd_module_pcm_adpcm,
+&_snd_module_pcm_rate,
+&_snd_module_pcm_plug,
+&_snd_module_pcm_multi,
+&_snd_module_pcm_shm,
+&_snd_module_pcm_file,
+&_snd_module_pcm_null,
+&_snd_module_pcm_empty,
+&_snd_module_pcm_share,
+&_snd_module_pcm_meter,
+&_snd_module_pcm_hooks,
+&_snd_module_pcm_lfloat,
+&_snd_module_pcm_ladspa,
+&_snd_module_pcm_dmix,
+&_snd_module_pcm_dshare,
+&_snd_module_pcm_dsnoop,
+&_snd_module_pcm_asym,
+&_snd_module_pcm_iec958,
+&_snd_module_pcm_softvol,
+&_snd_module_pcm_extplug,
+&_snd_module_pcm_ioplug,
+&_snd_module_pcm_mmap_emul,

@@ -1,5 +1,5 @@
 /*
- *  ALSA lib header file include/version.h
+ *  ALSA lib header file include/asoundlib.h
  *  Copyright (c) 2022 Huawei Device Co., Ltd.
  *
  *   This library is free software; you can redistribute it and/or modify
@@ -18,17 +18,41 @@
  *
  */
 
-#ifndef __ALSA_VERSION_H
-#define __ALSA_VERSION_H
+#ifndef __ASOUNDLIB_H
+#define __ASOUNDLIB_H
 
-#define SND_LIB_MAJOR		1 /**< major number of library version */
-#define SND_LIB_MINOR		2 /**< minor number of library version */
-#define SND_LIB_SUBMINOR	6 /**< subminor number of library version */
-#define SND_LIB_EXTRAVER	1000000 /**< extra version number, used mainly for betas */
-/** library version */
-#define SND_LIB_VER(maj, min, sub) (((maj)<<16)|((min)<<8)|(sub))
-#define SND_LIB_VERSION SND_LIB_VER(SND_LIB_MAJOR, SND_LIB_MINOR, SND_LIB_SUBMINOR)
-/** library version (string) */
-#define SND_LIB_VERSION_STR	"1.2.6"
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <string.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <poll.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <endian.h>
 
-#endif /* __ALSA_VERSION_H */
+#ifndef __GNUC__
+#define __inline__ inline
+#endif
+
+#include <alsa/asoundef.h>
+#include <alsa/version.h>
+#include <alsa/global.h>
+#include <alsa/input.h>
+#include <alsa/output.h>
+#include <alsa/error.h>
+#include <alsa/conf.h>
+#include <alsa/pcm.h>
+#include <alsa/rawmidi.h>
+#include <alsa/timer.h>
+#include <alsa/hwdep.h>
+#include <alsa/control.h>
+#include <alsa/mixer.h>
+#include <alsa/seq_event.h>
+#include <alsa/seq.h>
+#include <alsa/seqmid.h>
+#include <alsa/seq_midi_event.h>
+
+#endif /* __ASOUNDLIB_H */
