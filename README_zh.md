@@ -69,5 +69,5 @@ enable_audio_alsa_lib = true
 **方法二（可选）：**
 在您的BUILD.gn需要的地方添加依赖
 ```json
-deps += [ "//third_party/tinyalsa:libtinyalsa" ]
+deps += [ "//third_party/alsa-lib:libasound" ]
 ```
