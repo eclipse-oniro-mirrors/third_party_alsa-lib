@@ -10,7 +10,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-smixer.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-smixer.conf" ]
 
@@ -19,7 +19,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-alsa.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-alsa.conf" ]
 
@@ -28,7 +28,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/modem.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/modem.conf" ]
 
@@ -37,7 +37,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/dmix.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/dmix.conf" ]
 
@@ -46,7 +46,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/surround21.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround21.conf" ]
 
@@ -55,7 +55,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/dsnoop.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/dsnoop.conf" ]
 
@@ -64,7 +64,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/side.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/side.conf" ]
 
@@ -73,7 +73,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/dpl.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/dpl.conf" ]
 
@@ -82,7 +82,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/surround71.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround71.conf" ]
 
@@ -91,7 +91,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/surround40.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround40.conf" ]
 
@@ -100,7 +100,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/rear.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/rear.conf" ]
 
@@ -109,7 +109,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/surround50.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround50.conf" ]
 
@@ -118,7 +118,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/hdmi.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/hdmi.conf" ]
 
@@ -127,7 +127,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/surround51.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround51.conf" ]
 
@@ -136,7 +136,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/front.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/front.conf" ]
 
@@ -145,7 +145,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/iec958.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/iec958.conf" ]
 
@@ -154,7 +154,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/surround41.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround41.conf" ]
 
@@ -163,7 +163,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/center_lfe.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/center_lfe.conf" ]
 
@@ -172,7 +172,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-pcm/default.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/pcm"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/default.conf" ]
 
@@ -181,7 +181,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-ctl/default.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/ctl"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-ctl/default.conf" ]
 
@@ -190,7 +190,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/AU8820.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AU8820.conf" ]
 
@@ -199,7 +199,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/FireWave.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/FireWave.conf" ]
 
@@ -208,7 +208,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ENS1371.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ENS1371.conf" ]
 
@@ -217,7 +217,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/VX222.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VX222.conf" ]
 
@@ -226,7 +226,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/CMI8788.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8788.conf" ]
 
@@ -235,7 +235,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/pistachio-card.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/pistachio-card.conf" ]
 
@@ -244,7 +244,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/CMI8338-SWIEC.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8338-SWIEC.conf" ]
 
@@ -253,7 +253,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/CMI8338.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8338.conf" ]
 
@@ -262,7 +262,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ATIIXP-MODEM.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ATIIXP-MODEM.conf" ]
 
@@ -271,7 +271,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/AU8830.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AU8830.conf" ]
 
@@ -280,7 +280,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ATIIXP.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ATIIXP.conf" ]
 
@@ -289,7 +289,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/TRID4DWAVENX.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/TRID4DWAVENX.conf" ]
 
@@ -298,7 +298,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/GUS.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/GUS.conf" ]
 
@@ -307,7 +307,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ATIIXP-SPDMA.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ATIIXP-SPDMA.conf" ]
 
@@ -316,7 +316,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/AU8810.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AU8810.conf" ]
 
@@ -325,7 +325,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/aliases.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/aliases.conf" ]
 
@@ -334,7 +334,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/VIA686A.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA686A.conf" ]
 
@@ -343,7 +343,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/CMI8738-MC8.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8738-MC8.conf" ]
 
@@ -352,7 +352,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/Aureon51.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Aureon51.conf" ]
 
@@ -361,7 +361,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ENS1370.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ENS1370.conf" ]
 
@@ -370,7 +370,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/Loopback.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Loopback.conf" ]
 
@@ -379,7 +379,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/Maestro3.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Maestro3.conf" ]
 
@@ -388,7 +388,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/FWSpeakers.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/FWSpeakers.conf" ]
 
@@ -397,7 +397,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/VIA8233A.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA8233A.conf" ]
 
@@ -406,7 +406,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/Audigy.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Audigy.conf" ]
 
@@ -415,7 +415,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/Echo_Echo3G.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Echo_Echo3G.conf" ]
 
@@ -424,7 +424,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ICH.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICH.conf" ]
 
@@ -433,7 +433,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/VIA8237.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA8237.conf" ]
 
@@ -442,7 +442,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ES1968.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ES1968.conf" ]
 
@@ -451,7 +451,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/EMU10K1.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/EMU10K1.conf" ]
 
@@ -460,7 +460,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ICH4.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICH4.conf" ]
 
@@ -469,7 +469,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ICE1712.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICE1712.conf" ]
 
@@ -478,7 +478,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/PC-Speaker.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PC-Speaker.conf" ]
 
@@ -487,7 +487,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/EMU10K1X.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/EMU10K1X.conf" ]
 
@@ -496,7 +496,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/RME9652.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/RME9652.conf" ]
 
@@ -505,7 +505,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/YMF744.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/YMF744.conf" ]
 
@@ -514,7 +514,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/CA0106.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CA0106.conf" ]
 
@@ -523,7 +523,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ICH-MODEM.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICH-MODEM.conf" ]
 
@@ -532,7 +532,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/VXPocket440.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VXPocket440.conf" ]
 
@@ -541,7 +541,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/PMacToonie.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PMacToonie.conf" ]
 
@@ -550,7 +550,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/PMac.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PMac.conf" ]
 
@@ -559,7 +559,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/vc4-hdmi.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/vc4-hdmi.conf" ]
 
@@ -568,7 +568,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/Audigy2.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Audigy2.conf" ]
 
@@ -577,7 +577,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/CS46xx.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CS46xx.conf" ]
 
@@ -586,7 +586,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/RME9636.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/RME9636.conf" ]
 
@@ -595,7 +595,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/NFORCE.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/NFORCE.conf" ]
 
@@ -604,7 +604,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/PS3.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PS3.conf" ]
 
@@ -613,7 +613,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/FM801.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/FM801.conf" ]
 
@@ -622,7 +622,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/SI7018.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/SI7018.conf" ]
 
@@ -631,7 +631,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/SB-XFi.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/SB-XFi.conf" ]
 
@@ -640,7 +640,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/VXPocket.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VXPocket.conf" ]
 
@@ -649,7 +649,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/ICE1724.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICE1724.conf" ]
 
@@ -658,7 +658,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/AACI.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AACI.conf" ]
 
@@ -667,7 +667,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/USB-Audio.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/USB-Audio.conf" ]
 
@@ -676,7 +676,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/CMI8738-MC6.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8738-MC6.conf" ]
 
@@ -685,7 +685,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/HDA-Intel.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/HDA-Intel.conf" ]
 
@@ -694,7 +694,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/HdmiLpeAudio.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/HdmiLpeAudio.conf" ]
 
@@ -703,7 +703,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/Aureon71.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Aureon71.conf" ]
 
@@ -712,7 +712,7 @@ ohos_prebuilt_etc("alsa-lib-prebuilt-cards/VIA8233.conf") {
   install_enable = true
   relative_install_dir = "audio/alsa/share/cards"
   subsystem_name = "hdf"
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
 }
 alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA8233.conf" ]
 

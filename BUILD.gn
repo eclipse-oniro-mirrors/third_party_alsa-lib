@@ -181,6 +181,6 @@ ohos_shared_library("libasound") {
     "updater",
   ]
   install_enable = true
-  part_name = "audio_device_driver"
+  part_name = "drivers_peripheral_audio"
   subsystem_name = "hdf"
 }
