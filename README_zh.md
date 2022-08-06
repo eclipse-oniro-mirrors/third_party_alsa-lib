@@ -48,11 +48,12 @@ CONFIG_SND=y
 
 需要在各自产品配置文件中打开对应开关，路径如下：其中${product_company}表示您的企业名称，${product_name}表示您的产品名称
 ```bash
-/vendor/${product_company}/${product_name}/hals/audio/product.gni
+
+/vendor/${product_company}/${product_name}/config.json
 ```
-开关如下：开启为true，关闭为false，默认为false，
+开关如下：在drivers_peripheral_audio部件节点下，找到特性宏drivers_peripheral_audio_alsa_lib，开启为true，关闭为false，默认为false.
 ```json
-enable_audio_alsa_lib = true
+drivers_peripheral_audio_alsa_lib = true
 ```
 
 #### 5.3 alsa-lib组件编译依赖添加
