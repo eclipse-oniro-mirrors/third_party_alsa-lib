@@ -176,10 +176,7 @@ ohos_shared_library("libasound") {
   ]
   license_file = "./COPYING"
   output_extension = "so"
-  install_images = [
-    "system",
-    "updater",
-  ]
+  install_images = [ chipset_base_dir ]
   install_enable = true
   part_name = "alsa-lib"
   subsystem_name = "thirdparty"
