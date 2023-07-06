@@ -61,29 +61,25 @@ Note:If the text contains special characters, please escape them according to th
         <licensefile>COPYING</licensefile>
         <policylist>
             <policy name="projectPolicy" desc="">
-                <policyitem type="license" name="LGPL" path=".*" desc="license"/>
-                <policyitem type="license" name="GPL" path=".*" desc="兼容license"/>
-                <policyitem type="copyright" name="*" path=".*" rule="may" group="defaultGroup" filefilter="copyrightPolicyFilter" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
+                <policyitem type="compatbility" name="GPL" path=".*" desc="compatbility"/>
             </policy>
         </policylist>
         <filefilterlist>
             <filefilter name="defaultFilter" desc="Files not to check">
                 <filteritem type="filename" name="*.gif|*.lisp|*.am|*.py|*.m4|*.sh" desc="desc files"/>
                 <filteritem type="filename" name="*.alisp|*.doxygen|*.ac|*.gn" desc="desc files"/>
-                <filteritem type="filename" name="TODO|NOTES|MEMORY-LEAK|buildrpm|INSTALL|gitcompile" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
+                <filteritem type="filename" name="TODO|NOTES|MEMORY-LEAK|buildrpm|INSTALL|gitcompile|ChangeLog" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
                 <filteritem type="filename" name="*pcm_dmix_generic.c" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
                 <filteritem type="filepath" name="test/*.*" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="include/sound/*.*" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="include/asoundlib-tail.h" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="include/sys.h" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="include/pcm_old.h" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="src/pcm/pcm_dmix_i386.c" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="src/pcm/pcm_dmix_x86_64.c" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="src/pcm/pcm_ext_parm.h" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="src/pcm/pcm_asym.c" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="src/seq/seq_event.c" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
-                <filteritem type="filepath" name="src/seq/seq_old.c" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
                 <filteritem type="filepath" name="src/conf/BUILD.gn" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
+                <filteritem type="filepath" name="include/.*.h" desc="三方开源，不需检测license、copyright"/>
+                <filteritem type="filepath" name="include/alsa/*" desc="三方开源，不需检测license、copyright"/>
+                <filteritem type="filepath" name="modules/.*.c" desc="三方开源，不需检测license、copyright"/>
+                <filteritem type="filepath" name="src/.*.c" desc="三方开源，不需检测license、copyright"/>
+                <filteritem type="filepath" name="src/.*.h" desc="三方开源，不需检测license、copyright"/>
+                <filteritem type="filepath" name="alsalisp/alsalisp.c" desc="三方开源，不需检测license、copyright"/>
+                <filteritem type="filepath" name="aserver/aserver.c" desc="三方开源，不需检测license、copyright"/>
+                <filteritem type="filepath" name="modules/mixer/simple/sbase.h" desc="三方开源，不需检测license、copyright"/>
             </filefilter>
             <filefilter name="defaultPolicyFilter" desc="Filters for compatibility, license header policies">
                 <filteritem type="filename" name="README.OpenSource"/>
