@@ -67,7 +67,7 @@ Note:If the text contains special characters, please escape them according to th
             <filefilter name="defaultFilter" desc="Files not to check">
                 <filteritem type="filename" name="*.gif|*.lisp|*.am|*.py|*.m4|*.sh" desc="desc files"/>
                 <filteritem type="filename" name="*.alisp|*.doxygen|*.ac|*.gn" desc="desc files"/>
-                <filteritem type="filename" name="TODO|NOTES|MEMORY-LEAK|buildrpm|INSTALL|gitcompile|ChangeLog" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
+                <filteritem type="filename" name="TODO|NOTES|MEMORY-LEAK|buildrpm|INSTALL|gitcompile|ChangeLog|COPYING" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
                 <filteritem type="filename" name="*pcm_dmix_generic.c" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
                 <filteritem type="filepath" name="test/*.*" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
                 <filteritem type="filepath" name="src/conf/BUILD.gn" desc="三方开源，不需检测文件头是否遗漏版权声明"/>
