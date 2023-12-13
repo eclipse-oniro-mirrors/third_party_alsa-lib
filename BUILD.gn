@@ -174,7 +174,7 @@ ohos_shared_library("libasound") {
     # conf files
     "src/conf:alsa-lib-prebuilt-all",
   ]
-  license_file = "./COPYING"
+  license_file = "./README.OpenSource"
   output_extension = "so"
   install_images = [ chipset_base_dir ]
   install_enable = true
