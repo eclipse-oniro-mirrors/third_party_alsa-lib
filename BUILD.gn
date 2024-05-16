@@ -63,6 +63,7 @@ ohos_source_set("alsa_lib_dynamic") {
     "//third_party/alsa-lib/src/control/control_shm.c",
     "//third_party/alsa-lib/src/control/control_symbols.c",
     "//third_party/alsa-lib/src/control/ctlparse.c",
+    "//third_party/alsa-lib/src/control/eld.c",
     "//third_party/alsa-lib/src/control/hcontrol.c",
     "//third_party/alsa-lib/src/control/namehint.c",
     "//third_party/alsa-lib/src/control/setup.c",
