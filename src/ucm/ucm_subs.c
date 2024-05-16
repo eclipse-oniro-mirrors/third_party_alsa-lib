@@ -191,6 +191,7 @@ static char *rval_card_id_by_name(snd_use_case_mgr_t *uc_mgr, const char *id)
 	return strdup(snd_ctl_card_info_get_id(ctl_list->ctl_info));
 }
 
+#ifndef DOC_HIDDEN
 typedef struct lookup_iterate *(*lookup_iter_fcn_t)
 			(snd_use_case_mgr_t *uc_mgr, struct lookup_iterate *iter);
 typedef const char *(*lookup_fcn_t)(void *);
@@ -212,6 +213,7 @@ struct lookup_iterate {
 	struct ctl_list *ctl_list;
 	void *info;
 };
+#endif /* DOC_HIDDEN */
 
 static char *rval_lookup_main(snd_use_case_mgr_t *uc_mgr,
 			      const char *query,
@@ -490,7 +492,13 @@ static char *rval_env(snd_use_case_mgr_t *uc_mgr ATTRIBUTE_UNUSED, const char *i
 {
 	char *e;
 
-	e = getenv(id);
+	if (*id == '-') {
+		e = getenv(id + 1);
+		if (e == NULL)
+			e = "";
+	} else {
+		e = getenv(id);
+	}
 	if (e)
 		return strdup(e);
 	return NULL;
@@ -499,7 +507,7 @@ static char *rval_env(snd_use_case_mgr_t *uc_mgr ATTRIBUTE_UNUSED, const char *i
 static char *rval_sysfs(snd_use_case_mgr_t *uc_mgr ATTRIBUTE_UNUSED, const char *id)
 {
 	char path[PATH_MAX], link[PATH_MAX + 1];
-	struct stat sb;
+	struct stat64 sb;
 	ssize_t len;
 	const char *e;
 	int fd;
@@ -510,7 +518,7 @@ static char *rval_sysfs(snd_use_case_mgr_t *uc_mgr ATTRIBUTE_UNUSED, const char 
 	if (id[0] == '/')
 		id++;
 	snprintf(path, sizeof(path), "%s/%s", e, id);
-	if (lstat(path, &sb) != 0)
+	if (lstat64(path, &sb) != 0)
 		return NULL;
 	if (S_ISLNK(sb.st_mode)) {
 		len = readlink(path, link, sizeof(link) - 1);
@@ -549,13 +557,22 @@ static char *rval_sysfs(snd_use_case_mgr_t *uc_mgr ATTRIBUTE_UNUSED, const char 
 static char *rval_var(snd_use_case_mgr_t *uc_mgr, const char *id)
 {
 	const char *v;
+	bool ignore_not_found = false;
 
 	if (uc_mgr->conf_format < 3) {
 		uc_error("variable substitution is supported in v3+ syntax");
 		return NULL;
 	}
 
+	if (id[0] == '-') {
+		ignore_not_found = true;
+		id++;
+	} else if (id[0] == '@') {
+		ignore_not_found = true;
+	}
 	v = uc_mgr_get_variable(uc_mgr, id);
+	if (v == NULL && ignore_not_found)
+		v = "";
 	if (v)
 		return strdup(v);
 	return NULL;
@@ -582,7 +599,7 @@ static char *rval_eval(snd_use_case_mgr_t *uc_mgr, const char *e)
 	int err;
 
 	if (uc_mgr->conf_format < 5) {
-		uc_error("variable substitution is supported in v5+ syntax");
+		uc_error("variable evaluation is supported in v5+ syntax");
 		return NULL;
 	}
 	err = _snd_eval_string(&dst, e, rval_eval_var_cb, uc_mgr);
@@ -595,6 +612,41 @@ static char *rval_eval(snd_use_case_mgr_t *uc_mgr, const char *e)
 	if (err < 0)
 		return NULL;
 	return r;
+}
+
+static int rval_evali(snd_use_case_mgr_t *uc_mgr, snd_config_t *node, const char *e)
+{
+	snd_config_t *dst;
+	const char *id;
+	char *s;
+	size_t l;
+	int err;
+
+	if (uc_mgr->conf_format < 6) {
+		uc_error("variable evaluation is supported in v6+ syntax");
+		return -EINVAL;
+	}
+	err = snd_config_get_id(node, &id);
+	if (err < 0)
+		return err;
+	l = strlen(e);
+	if (e[l-1] != '}')
+		return -EINVAL;
+	s = malloc(l + 1);
+	if (s == NULL)
+		return -ENOMEM;
+	strcpy(s, e);
+	s[l-1] = '\0';
+	err = _snd_eval_string(&dst, s + 8, rval_eval_var_cb, uc_mgr);
+	free(s);
+	if (err < 0) {
+		uc_error("unable to evaluate '%s'", e);
+		return err;
+	}
+	err = snd_config_set_id(dst, id);
+	if (err < 0)
+		return err;
+	return snd_config_substitute(node, dst);
 }
 
 #define MATCH_VARIABLE(name, id, fcn, empty_ok)				\
@@ -727,6 +779,8 @@ __match2:
 			strncpy_with_escape(v2, value + idsize, rvalsize);
 			idsize += rvalsize + 1;
 			if (*v2 == '$' && uc_mgr->conf_format >= 3) {
+				if (strncmp(value, "${eval:", 7) == 0)
+					goto __direct_fcn2;
 				tmp = uc_mgr_get_variable(uc_mgr, v2 + 1);
 				if (tmp == NULL) {
 					uc_error("define '%s' is not reachable in this context!", v2 + 1);
@@ -735,6 +789,7 @@ __match2:
 					rval = fcn2(uc_mgr, tmp);
 				}
 			} else {
+__direct_fcn2:
 				rval = fcn2(uc_mgr, v2);
 			}
 			goto __rval;
@@ -816,6 +871,8 @@ int uc_mgr_substitute_tree(snd_use_case_mgr_t *uc_mgr, snd_config_t *node)
 				return err;
 			if (!uc_mgr_substitute_check(s2))
 				return 0;
+			if (strncmp(s2, "${evali:", 8) == 0)
+				return rval_evali(uc_mgr, node, s2);
 			err = uc_mgr_get_substituted_value(uc_mgr, &s, s2);
 			if (err < 0)
 				return err;
@@ -826,6 +883,12 @@ int uc_mgr_substitute_tree(snd_use_case_mgr_t *uc_mgr, snd_config_t *node)
 		}
 		return 0;
 	}
+	/* exception - macros are evaluated when instantied */
+	err = snd_config_get_id(node, &id);
+	if (err < 0)
+		return err;
+	if (id && strcmp(id, "DefineMacro") == 0)
+		return 0;
 	snd_config_for_each(i, next, node) {
 		n = snd_config_iterator_entry(i);
 		err = uc_mgr_substitute_tree(uc_mgr, n);

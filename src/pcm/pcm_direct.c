@@ -19,6 +19,7 @@
  *
  */
   
+#include "pcm_local.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -44,12 +45,16 @@
  *
  */
  
+#if !defined(__OpenBSD__) && !defined(__DragonFly__) && !defined(__ANDROID__)
 union semun {
 	int              val;    /* Value for SETVAL */
 	struct semid_ds *buf;    /* Buffer for IPC_STAT, IPC_SET */
 	unsigned short  *array;  /* Array for GETALL, SETALL */
+#if defined(__linux__)
 	struct seminfo  *__buf;  /* Buffer for IPC_INFO (Linux specific) */
+#endif
 };
+#endif
  
 /*
  * FIXME:
@@ -560,8 +565,11 @@ int snd_pcm_direct_timer_stop(snd_pcm_direct_t *dmix)
 	return 0;
 }
 
+#define RECOVERIES_FLAG_SUSPENDED	(1U << 31)
+#define RECOVERIES_MASK			((1U << 31) - 1)
+
 /*
- * Recover slave on XRUN.
+ * Recover slave on XRUN or SUSPENDED.
  * Even if direct plugins disable xrun detection, there might be an xrun
  * raised directly by some drivers.
  * The first client recovers slave pcm.
@@ -569,6 +577,8 @@ int snd_pcm_direct_timer_stop(snd_pcm_direct_t *dmix)
  */
 int snd_pcm_direct_slave_recover(snd_pcm_direct_t *direct)
 {
+	unsigned int recoveries;
+	int state;
 	int ret;
 	int semerr;
 
@@ -579,7 +589,8 @@ int snd_pcm_direct_slave_recover(snd_pcm_direct_t *direct)
 		return semerr;
 	}
 
-	if (snd_pcm_state(direct->spcm) != SND_PCM_STATE_XRUN) {
+	state = snd_pcm_state(direct->spcm);
+	if (state != SND_PCM_STATE_XRUN && state != SND_PCM_STATE_SUSPENDED) {
 		/* ignore... someone else already did recovery */
 		semerr = snd_pcm_direct_semaphore_up(direct,
 						     DIRECT_IPC_SEM_CLIENT);
@@ -588,6 +599,24 @@ int snd_pcm_direct_slave_recover(snd_pcm_direct_t *direct)
 			return semerr;
 		}
 		return 0;
+	}
+
+	recoveries = direct->shmptr->s.recoveries;
+	recoveries = (recoveries + 1) & RECOVERIES_MASK;
+	if (state == SND_PCM_STATE_SUSPENDED)
+		recoveries |= RECOVERIES_FLAG_SUSPENDED;
+	direct->shmptr->s.recoveries = recoveries;
+
+	/* some buggy drivers require the device resumed before prepared;
+	 * when a device has RESUME flag and is in SUSPENDED state, resume
+	 * here but immediately drop to bring it to a sane active state.
+	 */
+	if (state == SND_PCM_STATE_SUSPENDED &&
+	    (direct->spcm->info & SND_PCM_INFO_RESUME)) {
+		snd_pcm_resume(direct->spcm);
+		snd_pcm_drop(direct->spcm);
+		snd_pcm_direct_timer_stop(direct);
+		snd_pcm_direct_clear_timer_queue(direct);
 	}
 
 	ret = snd_pcm_prepare(direct->spcm);
@@ -621,7 +650,6 @@ int snd_pcm_direct_slave_recover(snd_pcm_direct_t *direct)
 		}
 		return ret;
 	}
-	direct->shmptr->s.recoveries++;
 	semerr = snd_pcm_direct_semaphore_up(direct,
 						 DIRECT_IPC_SEM_CLIENT);
 	if (semerr < 0) {
@@ -632,25 +660,49 @@ int snd_pcm_direct_slave_recover(snd_pcm_direct_t *direct)
 }
 
 /*
- * enter xrun state, if slave xrun occurred
- * @return: 0 - no xrun >0: xrun happened
+ * enter xrun or suspended state, if slave xrun occurred or suspended
+ * @return: 0 for no xrun/suspend or a negative error code for xrun/suspend
  */
-int snd_pcm_direct_client_chk_xrun(snd_pcm_direct_t *direct, snd_pcm_t *pcm)
+int snd_pcm_direct_check_xrun(snd_pcm_direct_t *direct, snd_pcm_t *pcm)
 {
+	int err;
+
+	switch (snd_pcm_state(direct->spcm)) {
+	case SND_PCM_STATE_DISCONNECTED:
+		direct->state = SNDRV_PCM_STATE_DISCONNECTED;
+		return -ENODEV;
+	case SND_PCM_STATE_XRUN:
+	case SND_PCM_STATE_SUSPENDED:
+		if ((err = snd_pcm_direct_slave_recover(direct)) < 0)
+			return err;
+		break;
+	default:
+		break;
+	}
+
+	if (direct->state == SND_PCM_STATE_XRUN)
+		return -EPIPE;
+	else if (direct->state == SND_PCM_STATE_SUSPENDED)
+		return -ESTRPIPE;
 	if (direct->shmptr->s.recoveries != direct->recoveries) {
 		/* no matter how many xruns we missed -
 		 * so don't increment but just update to actual counter
 		 */
 		direct->recoveries = direct->shmptr->s.recoveries;
-		pcm->fast_ops->drop(pcm);
+		pcm->fast_ops->drop(pcm->fast_op_arg);
 		/* trigger_tstamp update is missing in drop callbacks */
 		gettimestamp(&direct->trigger_tstamp, pcm->tstamp_type);
 		/* no timer clear:
 		 * if slave already entered xrun again the event is lost.
 		 * snd_pcm_direct_clear_timer_queue(direct);
 		 */
-		direct->state = SND_PCM_STATE_XRUN;
-		return 1;
+		if (direct->recoveries & RECOVERIES_FLAG_SUSPENDED) {
+			direct->state = SND_PCM_STATE_SUSPENDED;
+			return -ESTRPIPE;
+		} else {
+			direct->state = SND_PCM_STATE_XRUN;
+			return -EPIPE;
+		}
 	}
 	return 0;
 }
@@ -718,19 +770,11 @@ timer_changed:
 		}
 		empty = avail < pcm->avail_min;
 	}
-	switch (snd_pcm_state(dmix->spcm)) {
-	case SND_PCM_STATE_XRUN:
-		/* recover slave and update client state to xrun
-		 * before returning POLLERR
-		 */
-		snd_pcm_direct_slave_recover(dmix);
-		snd_pcm_direct_client_chk_xrun(dmix, pcm);
-		/* fallthrough */
-	case SND_PCM_STATE_SUSPENDED:
-	case SND_PCM_STATE_SETUP:
+
+	if (snd_pcm_direct_check_xrun(dmix, pcm) < 0 ||
+	    snd_pcm_state(dmix->spcm) == SND_PCM_STATE_SETUP) {
 		events |= POLLERR;
-		break;
-	default:
+	} else {
 		if (empty) {
 			/* here we have a race condition:
 			 * if period event arrived after the avail_update call
@@ -754,7 +798,6 @@ timer_changed:
 				break;
 			}
 		}
-		break;
 	}
 	*revents = events;
 	return 0;
@@ -1028,7 +1071,34 @@ int snd_pcm_direct_munmap(snd_pcm_t *pcm ATTRIBUTE_UNUSED)
 snd_pcm_chmap_query_t **snd_pcm_direct_query_chmaps(snd_pcm_t *pcm)
 {
 	snd_pcm_direct_t *dmix = pcm->private_data;
-	return snd_pcm_query_chmaps(dmix->spcm);
+	snd_pcm_chmap_query_t **smaps, **maps;
+	unsigned int i, j;
+
+	if (dmix->bindings == NULL)
+		return snd_pcm_query_chmaps(dmix->spcm);
+
+	maps = calloc(2, sizeof(*maps));
+	if (!maps)
+		return NULL;
+	maps[0] = calloc(dmix->channels + 2, sizeof(int *));
+	if (!maps[0]) {
+		free(maps);
+		return NULL;
+	}
+	smaps = snd_pcm_query_chmaps(dmix->spcm);
+	if (smaps == NULL) {
+		snd_pcm_free_chmaps(maps);
+		return NULL;
+	}
+	maps[0]->type = SND_CHMAP_TYPE_FIXED;
+	maps[0]->map.channels = dmix->channels;
+	for (i = 0; i < dmix->channels; i++) {
+		j = dmix->bindings[i];
+		if (j == UINT_MAX || smaps[0]->map.channels < j)
+			continue;
+		maps[0]->map.pos[i] = smaps[0]->map.pos[j];
+	}
+	return maps;
 }
 
 snd_pcm_chmap_t *snd_pcm_direct_get_chmap(snd_pcm_t *pcm)
@@ -1073,27 +1143,10 @@ int snd_pcm_direct_prepare(snd_pcm_t *pcm)
 int snd_pcm_direct_resume(snd_pcm_t *pcm)
 {
 	snd_pcm_direct_t *dmix = pcm->private_data;
-	snd_pcm_t *spcm = dmix->spcm;
+	int err;
 
-	snd_pcm_direct_semaphore_down(dmix, DIRECT_IPC_SEM_CLIENT);
-	/* some buggy drivers require the device resumed before prepared;
-	 * when a device has RESUME flag and is in SUSPENDED state, resume
-	 * here but immediately drop to bring it to a sane active state.
-	 */
-	if ((spcm->info & SND_PCM_INFO_RESUME) &&
-	    snd_pcm_state(spcm) == SND_PCM_STATE_SUSPENDED) {
-		snd_pcm_resume(spcm);
-		snd_pcm_drop(spcm);
-		snd_pcm_direct_timer_stop(dmix);
-		snd_pcm_direct_clear_timer_queue(dmix);
-		snd_pcm_areas_silence(snd_pcm_mmap_areas(spcm), 0,
-				      spcm->channels, spcm->buffer_size,
-				      spcm->format);
-		snd_pcm_prepare(spcm);
-		snd_pcm_start(spcm);
-	}
-	snd_pcm_direct_semaphore_up(dmix, DIRECT_IPC_SEM_CLIENT);
-	return -ENOSYS;
+	err = snd_pcm_direct_slave_recover(dmix);
+	return err < 0 ? err : -ENOSYS;
 }
 
 #define COPY_SLAVE(field) (dmix->shmptr->s.field = spcm->field)
@@ -1689,7 +1742,7 @@ int snd_pcm_direct_parse_bindings(snd_pcm_direct_t *dmix,
 			continue;
 		err = safe_strtol(id, &cchannel);
 		if (err < 0 || cchannel < 0) {
-			SNDERR("invalid client channel in binding: %s\n", id);
+			SNDERR("invalid client channel in binding: %s", id);
 			return -EINVAL;
 		}
 		if ((unsigned)cchannel >= count)
@@ -1714,7 +1767,7 @@ int snd_pcm_direct_parse_bindings(snd_pcm_direct_t *dmix,
 			continue;
 		safe_strtol(id, &cchannel);
 		if (snd_config_get_integer(n, &schannel) < 0) {
-			SNDERR("unable to get slave channel (should be integer type) in binding: %s\n", id);
+			SNDERR("unable to get slave channel (should be integer type) in binding: %s", id);
 			free(bindings);
 			return -EINVAL;
 		}
@@ -1818,11 +1871,11 @@ static int _snd_pcm_direct_get_slave_ipc_offset(snd_config_t *root,
 		if (strcmp(id, "type") == 0) {
 			err = snd_config_get_string(n, &str);
 			if (err < 0) {
-				SNDERR("Invalid value for PCM type definition\n");
+				SNDERR("Invalid value for PCM type definition");
 				return -EINVAL;
 			}
 			if (strcmp(str, "hw")) {
-				SNDERR("Invalid type '%s' for slave PCM\n", str);
+				SNDERR("Invalid type '%s' for slave PCM", str);
 				return -EINVAL;
 			}
 			continue;
@@ -1936,7 +1989,7 @@ int snd_pcm_direct_parse_open_conf(snd_config_t *root, snd_config_t *conf,
 				SNDERR("Invalid type for %s", id);
 				return -EINVAL;
 			}
-			if (strcmp(str, "no") == 0)
+			if (strcmp(str, "no") == 0 || strcmp(str, "off") == 0)
 				rec->hw_ptr_alignment = SND_PCM_HW_PTR_ALIGNMENT_NO;
 			else if (strcmp(str, "roundup") == 0)
 				rec->hw_ptr_alignment = SND_PCM_HW_PTR_ALIGNMENT_ROUNDUP;
@@ -2072,22 +2125,22 @@ int snd_pcm_direct_parse_open_conf(snd_config_t *root, snd_config_t *conf,
 	return 0;
 }
 
-void snd_pcm_direct_reset_slave_ptr(snd_pcm_t *pcm, snd_pcm_direct_t *dmix)
+void snd_pcm_direct_reset_slave_ptr(snd_pcm_t *pcm, snd_pcm_direct_t *dmix,
+				    snd_pcm_uframes_t hw_ptr)
 {
-
+	dmix->slave_appl_ptr = dmix->slave_hw_ptr = hw_ptr;
 	if (dmix->hw_ptr_alignment == SND_PCM_HW_PTR_ALIGNMENT_ROUNDUP ||
-		(dmix->hw_ptr_alignment == SND_PCM_HW_PTR_ALIGNMENT_AUTO &&
-		pcm->buffer_size <= pcm->period_size * 2))
+	    (dmix->hw_ptr_alignment == SND_PCM_HW_PTR_ALIGNMENT_AUTO &&
+	     pcm->buffer_size <= pcm->period_size * 2))
 		dmix->slave_appl_ptr =
 			((dmix->slave_appl_ptr + dmix->slave_period_size - 1) /
-			dmix->slave_period_size) * dmix->slave_period_size;
+					dmix->slave_period_size) * dmix->slave_period_size;
 	else if (dmix->hw_ptr_alignment == SND_PCM_HW_PTR_ALIGNMENT_ROUNDDOWN ||
-		(dmix->hw_ptr_alignment == SND_PCM_HW_PTR_ALIGNMENT_AUTO &&
-		(dmix->slave_period_size * SEC_TO_MS) /
-		pcm->rate < LOW_LATENCY_PERIOD_TIME))
+		 (dmix->hw_ptr_alignment == SND_PCM_HW_PTR_ALIGNMENT_AUTO &&
+		  ((dmix->slave_period_size * SEC_TO_MS) / pcm->rate) < LOW_LATENCY_PERIOD_TIME))
 		dmix->slave_appl_ptr = dmix->slave_hw_ptr =
 			((dmix->slave_hw_ptr / dmix->slave_period_size) *
-			dmix->slave_period_size);
+							dmix->slave_period_size);
 }
 
 int _snd_pcm_direct_new(snd_pcm_t **pcmp, snd_pcm_direct_t **_dmix, int type,

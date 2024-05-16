@@ -26,6 +26,7 @@
  *
  */
   
+#include "pcm_local.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -199,25 +200,17 @@ static int snd_pcm_dshare_sync_ptr0(snd_pcm_t *pcm, snd_pcm_uframes_t slave_hw_p
 static int snd_pcm_dshare_sync_ptr(snd_pcm_t *pcm)
 {
 	snd_pcm_direct_t *dshare = pcm->private_data;
+	snd_pcm_uframes_t slave_hw_ptr;
 	int err;
 
-	switch (snd_pcm_state(dshare->spcm)) {
-	case SND_PCM_STATE_DISCONNECTED:
-		dshare->state = SNDRV_PCM_STATE_DISCONNECTED;
-		return -ENODEV;
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dshare)) < 0)
-			return err;
-		break;
-	default:
-		break;
-	}
-	if (snd_pcm_direct_client_chk_xrun(dshare, pcm))
-		return -EPIPE;
 	if (dshare->slowptr)
 		snd_pcm_hwsync(dshare->spcm);
+	slave_hw_ptr = *dshare->spcm->hw.ptr;
+	err = snd_pcm_direct_check_xrun(dshare, pcm);
+	if (err < 0)
+		return err;
 
-	return snd_pcm_dshare_sync_ptr0(pcm, *dshare->spcm->hw.ptr);
+	return snd_pcm_dshare_sync_ptr0(pcm, slave_hw_ptr);
 }
 
 /*
@@ -237,7 +230,7 @@ static int snd_pcm_dshare_status(snd_pcm_t *pcm, snd_pcm_status_t * status)
 	case SNDRV_PCM_STATE_DRAINING:
 	case SNDRV_PCM_STATE_RUNNING:
 		snd_pcm_dshare_sync_ptr0(pcm, status->hw_ptr);
-		status->delay += snd_pcm_mmap_playback_delay(pcm);
+		status->delay = snd_pcm_mmap_playback_delay(pcm);
 		break;
 	default:
 		break;
@@ -255,22 +248,8 @@ static int snd_pcm_dshare_status(snd_pcm_t *pcm, snd_pcm_status_t * status)
 static snd_pcm_state_t snd_pcm_dshare_state(snd_pcm_t *pcm)
 {
 	snd_pcm_direct_t *dshare = pcm->private_data;
-	int err;
-	snd_pcm_state_t state;
-	state = snd_pcm_state(dshare->spcm);
-	switch (state) {
-	case SND_PCM_STATE_SUSPENDED:
-	case SND_PCM_STATE_DISCONNECTED:
-		dshare->state = state;
-		return state;
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dshare)) < 0)
-			return err;
-		break;
-	default:
-		break;
-	}
-	snd_pcm_direct_client_chk_xrun(dshare, pcm);
+
+	snd_pcm_direct_check_xrun(dshare, pcm);
 	if (dshare->state == STATE_RUN_PENDING)
 		return SNDRV_PCM_STATE_RUNNING;
 	return dshare->state;
@@ -327,8 +306,7 @@ static int snd_pcm_dshare_reset(snd_pcm_t *pcm)
 	snd_pcm_direct_t *dshare = pcm->private_data;
 	dshare->hw_ptr %= pcm->period_size;
 	dshare->appl_ptr = dshare->last_appl_ptr = dshare->hw_ptr;
-	dshare->slave_appl_ptr = dshare->slave_hw_ptr = *dshare->spcm->hw.ptr;
-	snd_pcm_direct_reset_slave_ptr(pcm, dshare);
+	snd_pcm_direct_reset_slave_ptr(pcm, dshare, *dshare->spcm->hw.ptr);
 	return 0;
 }
 
@@ -337,8 +315,7 @@ static int snd_pcm_dshare_start_timer(snd_pcm_t *pcm, snd_pcm_direct_t *dshare)
 	int err;
 
 	snd_pcm_hwsync(dshare->spcm);
-	dshare->slave_appl_ptr = dshare->slave_hw_ptr = *dshare->spcm->hw.ptr;
-	snd_pcm_direct_reset_slave_ptr(pcm, dshare);
+	snd_pcm_direct_reset_slave_ptr(pcm, dshare, *dshare->spcm->hw.ptr);
 	err = snd_timer_start(dshare->timer);
 	if (err < 0)
 		return err;
@@ -424,7 +401,7 @@ static int __snd_pcm_dshare_drain(snd_pcm_t *pcm)
 		}
 		if (dshare->state == SND_PCM_STATE_DRAINING) {
 			snd_pcm_dshare_sync_area(pcm);
-			snd_pcm_wait_nocheck(pcm, -1);
+			snd_pcm_wait_nocheck(pcm, SND_PCM_WAIT_DRAIN);
 			snd_pcm_direct_clear_timer_queue(dshare); /* force poll to wait */
 
 			switch (snd_pcm_state(dshare->spcm)) {
@@ -529,18 +506,9 @@ static snd_pcm_sframes_t snd_pcm_dshare_mmap_commit(snd_pcm_t *pcm,
 	snd_pcm_direct_t *dshare = pcm->private_data;
 	int err;
 
-	switch (snd_pcm_state(dshare->spcm)) {
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dshare)) < 0)
-			return err;
-		break;
-	case SND_PCM_STATE_SUSPENDED:
-		return -ESTRPIPE;
-	default:
-		break;
-	}
-	if (snd_pcm_direct_client_chk_xrun(dshare, pcm))
-		return -EPIPE;
+	err = snd_pcm_direct_check_xrun(dshare, pcm);
+	if (err < 0)
+		return err;
 	if (! size)
 		return 0;
 	snd_pcm_mmap_appl_forward(pcm, size);
@@ -877,7 +845,7 @@ pcm.name {
 	ipc_perm INT		# IPC permissions (octal, default 0600)
 	hw_ptr_alignment STR	# Slave application and hw pointer alignment type
 		# STR can be one of the below strings :
-		# no
+		# no (or off)
 		# roundup
 		# rounddown
 		# auto (default)

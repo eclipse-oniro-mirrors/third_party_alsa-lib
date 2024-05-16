@@ -26,6 +26,7 @@
  *
  */
   
+#include "pcm_local.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -424,25 +425,17 @@ static int snd_pcm_dmix_sync_ptr0(snd_pcm_t *pcm, snd_pcm_uframes_t slave_hw_ptr
 static int snd_pcm_dmix_sync_ptr(snd_pcm_t *pcm)
 {
 	snd_pcm_direct_t *dmix = pcm->private_data;
+	snd_pcm_uframes_t slave_hw_ptr;
 	int err;
 
-	switch (snd_pcm_state(dmix->spcm)) {
-	case SND_PCM_STATE_DISCONNECTED:
-		dmix->state = SND_PCM_STATE_DISCONNECTED;
-		return -ENODEV;
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dmix)) < 0)
-			return err;
-		break;
-	default:
-		break;
-	}
-	if (snd_pcm_direct_client_chk_xrun(dmix, pcm))
-		return -EPIPE;
 	if (dmix->slowptr)
 		snd_pcm_hwsync(dmix->spcm);
+	slave_hw_ptr = *dmix->spcm->hw.ptr;
+	err = snd_pcm_direct_check_xrun(dmix, pcm);
+	if (err < 0)
+		return err;
 
-	return snd_pcm_dmix_sync_ptr0(pcm, *dmix->spcm->hw.ptr);
+	return snd_pcm_dmix_sync_ptr0(pcm, slave_hw_ptr);
 }
 
 /*
@@ -452,22 +445,8 @@ static int snd_pcm_dmix_sync_ptr(snd_pcm_t *pcm)
 static snd_pcm_state_t snd_pcm_dmix_state(snd_pcm_t *pcm)
 {
 	snd_pcm_direct_t *dmix = pcm->private_data;
-	int err;
-	snd_pcm_state_t state;
-	state = snd_pcm_state(dmix->spcm);
-	switch (state) {
-	case SND_PCM_STATE_SUSPENDED:
-	case SND_PCM_STATE_DISCONNECTED:
-		dmix->state = state;
-		return state;
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dmix)) < 0)
-			return err;
-		break;
-	default:
-		break;
-	}
-	snd_pcm_direct_client_chk_xrun(dmix, pcm);
+
+	snd_pcm_direct_check_xrun(dmix, pcm);
 	if (dmix->state == STATE_RUN_PENDING)
 		return SNDRV_PCM_STATE_RUNNING;
 	return dmix->state;
@@ -553,8 +532,7 @@ static int snd_pcm_dmix_reset(snd_pcm_t *pcm)
 	snd_pcm_direct_t *dmix = pcm->private_data;
 	dmix->hw_ptr %= pcm->period_size;
 	dmix->appl_ptr = dmix->last_appl_ptr = dmix->hw_ptr;
-	dmix->slave_appl_ptr = dmix->slave_hw_ptr = *dmix->spcm->hw.ptr;
-	snd_pcm_direct_reset_slave_ptr(pcm, dmix);
+	snd_pcm_direct_reset_slave_ptr(pcm, dmix, *dmix->spcm->hw.ptr);
 	return 0;
 }
 
@@ -563,8 +541,7 @@ static int snd_pcm_dmix_start_timer(snd_pcm_t *pcm, snd_pcm_direct_t *dmix)
 	int err;
 
 	snd_pcm_hwsync(dmix->spcm);
-	dmix->slave_appl_ptr = dmix->slave_hw_ptr = *dmix->spcm->hw.ptr;
-	snd_pcm_direct_reset_slave_ptr(pcm, dmix);
+	snd_pcm_direct_reset_slave_ptr(pcm, dmix, *dmix->spcm->hw.ptr);
 	err = snd_timer_start(dmix->timer);
 	if (err < 0)
 		return err;
@@ -647,7 +624,7 @@ static int __snd_pcm_dmix_drain(snd_pcm_t *pcm)
 		if (dmix->state == SND_PCM_STATE_DRAINING) {
 			snd_pcm_dmix_sync_area(pcm);
 			if ((pcm->mode & SND_PCM_NONBLOCK) == 0) {
-				snd_pcm_wait_nocheck(pcm, -1);
+				snd_pcm_wait_nocheck(pcm, SND_PCM_WAIT_DRAIN);
 				snd_pcm_direct_clear_timer_queue(dmix); /* force poll to wait */
 			}
 
@@ -830,18 +807,9 @@ static snd_pcm_sframes_t snd_pcm_dmix_mmap_commit(snd_pcm_t *pcm,
 	snd_pcm_direct_t *dmix = pcm->private_data;
 	int err;
 
-	switch (snd_pcm_state(dmix->spcm)) {
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dmix)) < 0)
-			return err;
-		break;
-	case SND_PCM_STATE_SUSPENDED:
-		return -ESTRPIPE;
-	default:
-		break;
-	}
-	if (snd_pcm_direct_client_chk_xrun(dmix, pcm))
-		return -EPIPE;
+	err = snd_pcm_direct_check_xrun(dmix, pcm);
+	if (err < 0)
+		return err;
 	if (! size)
 		return 0;
 	snd_pcm_mmap_appl_forward(pcm, size);
@@ -1173,7 +1141,7 @@ pcm.name {
 	ipc_perm INT		# IPC permissions (octal, default 0600)
 	hw_ptr_alignment STR	# Slave application and hw pointer alignment type
 				# STR can be one of the below strings :
-				# no
+				# no (or off)
 				# roundup
 				# rounddown
 				# auto (default)

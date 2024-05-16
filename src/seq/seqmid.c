@@ -20,14 +20,12 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "seq_local.h"
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <sys/ioctl.h>
-#include "seq_local.h"
 
 /**
  * \brief queue controls - start/stop/continue
@@ -252,6 +250,44 @@ int snd_seq_set_client_event_filter(snd_seq_t *seq, int event_type)
 	if ((err = snd_seq_get_client_info(seq, &info)) < 0)
 		return err;
 	snd_seq_client_info_event_filter_add(&info, event_type);
+	return snd_seq_set_client_info(seq, &info);
+}
+
+/**
+ * \brief set client MIDI protocol version
+ * \param seq sequencer handle
+ * \param midi_version MIDI protocol version to set
+ * \return 0 on success or negative error code
+ *
+ * \sa snd_seq_set_client_info()
+ */
+int snd_seq_set_client_midi_version(snd_seq_t *seq, int midi_version)
+{
+	snd_seq_client_info_t info;
+	int err;
+
+	if ((err = snd_seq_get_client_info(seq, &info)) < 0)
+		return err;
+	snd_seq_client_info_set_midi_version(&info, midi_version);
+	return snd_seq_set_client_info(seq, &info);
+}
+
+/**
+ * \brief enable/disable client's automatic conversion of UMP/legacy events
+ * \param seq sequencer handle
+ * \param enable 0 or 1 to disable/enable the conversion
+ * \return 0 on success or negative error code
+ *
+ * \sa snd_seq_set_client_info()
+ */
+int snd_seq_set_client_ump_conversion(snd_seq_t *seq, int enable)
+{
+	snd_seq_client_info_t info;
+	int err;
+
+	if ((err = snd_seq_get_client_info(seq, &info)) < 0)
+		return err;
+	snd_seq_client_info_set_ump_conversion(&info, enable);
 	return snd_seq_set_client_info(seq, &info);
 }
 

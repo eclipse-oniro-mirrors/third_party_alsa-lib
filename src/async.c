@@ -29,7 +29,9 @@
 #include <signal.h>
 
 static struct sigaction previous_action;
+#ifndef DOC_HIDDEN
 #define MAX_SIG_FUNCTION_CODE 10 /* i.e. SIG_DFL SIG_IGN SIG_HOLD et al */
+#endif /* DOC_HIDDEN */
 
 #ifdef SND_ASYNC_RT_SIGNAL
 /** async signal number */
@@ -54,6 +56,15 @@ static LIST_HEAD(snd_async_handlers);
 
 static void snd_async_handler(int signo ATTRIBUTE_UNUSED, siginfo_t *siginfo, void *context ATTRIBUTE_UNUSED)
 {
+#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+	/* siginfo_t does not have si_fd */
+	struct list_head *i;
+	list_for_each(i, &snd_async_handlers) {
+		snd_async_handler_t *h = list_entry(i, snd_async_handler_t, glist);
+		if (h->callback)
+			h->callback(h);
+	}
+#else
 	int fd;
 	struct list_head *i;
 	//assert(siginfo->si_code == SI_SIGIO);
@@ -66,6 +77,7 @@ static void snd_async_handler(int signo ATTRIBUTE_UNUSED, siginfo_t *siginfo, vo
 		if (h->fd == fd && h->callback)
 			h->callback(h);
 	}
+#endif
 }
 
 /**

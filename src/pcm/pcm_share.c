@@ -26,6 +26,7 @@
  *
  */
   
+#include "pcm_local.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -36,7 +37,6 @@
 #include <sys/socket.h>
 #include <poll.h>
 #include <pthread.h>
-#include "pcm_local.h"
 
 #ifndef PIC
 /* entry for static linking */
@@ -205,6 +205,7 @@ static snd_pcm_uframes_t _snd_pcm_share_missing(snd_pcm_t *pcm)
 	snd_pcm_sframes_t hw_avail;
 	snd_pcm_uframes_t missing = INT_MAX;
 	snd_pcm_sframes_t ready_missing;
+	ssize_t s;
 	// printf("state=%s hw_ptr=%ld appl_ptr=%ld slave appl_ptr=%ld safety=%ld silence=%ld\n", snd_pcm_state_name(share->state), slave->hw_ptr, share->appl_ptr, *slave->pcm->appl_ptr, slave->safety_threshold, slave->silence_frames);
 	switch (share->state) {
 	case SND_PCM_STATE_RUNNING:
@@ -288,16 +289,24 @@ static snd_pcm_uframes_t _snd_pcm_share_missing(snd_pcm_t *pcm)
  update_poll:
 	if (ready != share->ready) {
 		char buf[1];
-		if (pcm->stream == SND_PCM_STREAM_PLAYBACK) {
-			if (ready)
-				read(share->slave_socket, buf, 1);
-			else
-				write(share->client_socket, buf, 1);
-		} else {
-			if (ready)
-				write(share->slave_socket, buf, 1);
-			else
-				read(share->client_socket, buf, 1);
+		while (1) {
+			if (pcm->stream == SND_PCM_STREAM_PLAYBACK) {
+				if (ready)
+					s = read(share->slave_socket, buf, 1);
+				else
+					s = write(share->client_socket, buf, 1);
+			} else {
+				if (ready)
+					s = write(share->slave_socket, buf, 1);
+				else
+					s = read(share->client_socket, buf, 1);
+			}
+			if (s < 0) {
+				if (errno == EINTR)
+					continue;
+				return INT_MAX;
+			}
+			break;
 		}
 		share->ready = ready;
 	}
@@ -1185,7 +1194,7 @@ static int snd_pcm_share_drain(snd_pcm_t *pcm)
 			_snd_pcm_share_update(pcm);
 			Pthread_mutex_unlock(&slave->mutex);
 			if (!(pcm->mode & SND_PCM_NONBLOCK))
-				snd_pcm_wait(pcm, -1);
+				snd_pcm_wait(pcm, SND_PCM_WAIT_DRAIN);
 			return 0;
 		default:
 			assert(0);

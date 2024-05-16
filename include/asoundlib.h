@@ -1,7 +1,14 @@
-/*
- *  ALSA lib header file include/asoundlib.h
- *  Copyright (c) 2022 Huawei Device Co., Ltd.
+/**
+ * \file include/asoundlib.h
+ * \brief Application interface library for the ALSA driver
+ * \author Jaroslav Kysela <perex@perex.cz>
+ * \author Abramo Bagnara <abramo@alsa-project.org>
+ * \author Takashi Iwai <tiwai@suse.de>
+ * \date 1998-2001
  *
+ * Application interface library for the ALSA driver
+ */
+/*
  *   This library is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU Lesser General Public License as
  *   published by the Free Software Foundation; either version 2.1 of
@@ -33,9 +40,11 @@
 #include <stdarg.h>
 #include <endian.h>
 
+#ifndef DOC_HIDDEN
 #ifndef __GNUC__
 #define __inline__ inline
 #endif
+#endif /* DOC_HIDDEN */
 
 #include <alsa/asoundef.h>
 #include <alsa/version.h>
@@ -46,6 +55,7 @@
 #include <alsa/conf.h>
 #include <alsa/pcm.h>
 #include <alsa/rawmidi.h>
+#include <alsa/ump.h>
 #include <alsa/timer.h>
 #include <alsa/hwdep.h>
 #include <alsa/control.h>

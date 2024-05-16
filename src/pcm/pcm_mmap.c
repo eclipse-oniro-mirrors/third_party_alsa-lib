@@ -18,16 +18,17 @@
  *
  */
 
-#include "config.h"
+#include "pcm_local.h"
 #include <stdio.h>
+#if HAVE_MALLOC_H
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <poll.h>
 #include <sys/mman.h>
 #ifdef HAVE_SYS_SHM_H
 #include <sys/shm.h>
 #endif
-#include "pcm_local.h"
 
 void snd_pcm_mmap_appl_backward(snd_pcm_t *pcm, snd_pcm_uframes_t frames)
 {

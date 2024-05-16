@@ -34,6 +34,9 @@
 #include <endian.h>
 #elif defined(HAVE_SYS_ENDIAN_H)
 #include <sys/endian.h>
+#else
+#error Header defining endianness not defined
+#endif
 #ifndef __BYTE_ORDER
 #define __BYTE_ORDER BYTE_ORDER
 #endif
@@ -42,9 +45,6 @@
 #endif
 #ifndef __BIG_ENDIAN
 #define __BIG_ENDIAN BIG_ENDIAN
-#endif
-#else
-#error Header defining endianness not defined
 #endif
 #include <stdarg.h>
 #include <poll.h>
@@ -69,11 +69,26 @@
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define SND_LITTLE_ENDIAN
 #define SNDRV_LITTLE_ENDIAN
+#define SNDRV_LITTLE_ENDIAN_BITFIELD
 #elif __BYTE_ORDER == __BIG_ENDIAN
 #define SND_BIG_ENDIAN
 #define SNDRV_BIG_ENDIAN
+#define SNDRV_BIG_ENDIAN_BITFIELD
 #else
 #error "Unsupported endian..."
+#endif
+
+#ifndef HAVE_LFS
+#define stat64 stat
+#define lstat64 lstat
+#define dirent64 dirent
+#define readdir64 readdir
+#define scandir64 scandir
+#define versionsort64 versionsort
+#define alphasort64 alphasort
+#define ino64_t ino_t
+#define fstat64 fstat
+#define stat64 stat
 #endif
 
 #define _snd_config_iterator list_head
@@ -167,6 +182,7 @@
 #include "pcm.h"
 #include "pcm_plugin.h"
 #include "rawmidi.h"
+#include "ump.h"
 #include "timer.h"
 #include "hwdep.h"
 #include "control.h"
@@ -180,7 +196,9 @@
 #define snd_seq_real_time	sndrv_seq_real_time
 #define snd_seq_timestamp	sndrv_seq_timestamp
 #define snd_seq_event_type_t	sndrv_seq_event_type_t
+#define snd_seq_event_data	sndrv_seq_event_data
 #define snd_seq_event		sndrv_seq_event
+#define snd_seq_ump_event	sndrv_seq_ump_event
 #define snd_seq_connect		sndrv_seq_connect
 #define snd_seq_ev_note		sndrv_seq_ev_note
 #define snd_seq_ev_ctrl		sndrv_seq_ev_ctrl
@@ -232,10 +250,14 @@ size_t page_align(size_t size);
 size_t page_size(void);
 size_t page_ptr(size_t object_offset, size_t object_size, size_t *offset, size_t *mmap_offset);
 
-int safe_strtoll_base(const char *str, long long *val, int base);
+#define safe_strtoll_base _snd_safe_strtoll_base
+int _snd_safe_strtoll_base(const char *str, long long *val, int base);
 static inline int safe_strtoll(const char *str, long long *val) { return safe_strtoll_base(str, val, 0); }
-int safe_strtol_base(const char *str, long *val, int base);
+#define safe_strtol_base _snd_safe_strtol_base
+int _snd_safe_strtol_base(const char *str, long *val, int base);
 static inline int safe_strtol(const char *str, long *val) { return safe_strtol_base(str, val, 0); }
+#define safe_strtod _snd_safe_strtod
+int _snd_safe_strtod(const char *str, double *val);
 
 int snd_send_fd(int sock, void *data, size_t len, int fd);
 int snd_receive_fd(int sock, void *data, size_t len, int *fd);

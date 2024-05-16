@@ -18,6 +18,8 @@
  *
  */
 
+#include "aserver.h"
+
 #include <sys/shm.h>
 #include <sys/socket.h>
 #include <poll.h>
@@ -33,7 +35,6 @@
 #include <limits.h>
 #include <signal.h>
 
-#include "aserver.h"
 
 char *command;
 
@@ -530,7 +531,7 @@ transport_ops_t pcm_shm_ops = {
 static int ctl_handler(waiter_t *waiter, unsigned short events)
 {
 	client_t *client = waiter->private_data;
-	char buf[1];
+	char buf[1] = "";
 	ssize_t n;
 	if (events & POLLIN) {
 		n = write(client->poll_fd, buf, 1);
@@ -737,7 +738,7 @@ static int snd_client_open(client_t *client)
 		ans.result = -EINVAL;
 		goto _answer;
 	}
-	name = alloca(req.namelen);
+	name = alloca(req.namelen + 1);
 	err = read(client->ctrl_fd, name, req.namelen);
 	if (err < 0) {
 		SYSERROR("read failed");
@@ -774,6 +775,10 @@ static int snd_client_open(client_t *client)
 	name[req.namelen] = '\0';
 
 	client->transport_type = req.transport_type;
+	if (sizeof(client->name) < (size_t)(req.namelen + 1)) {
+		ans.result = -ENOMEM;
+		goto _answer;
+	}
 	strcpy(client->name, name);
 	client->stream = req.stream;
 	client->mode = req.mode;

@@ -51,7 +51,7 @@ static int snd_ctl_shm_action(snd_ctl_t *ctl)
 {
 	snd_ctl_shm_t *shm = ctl->private_data;
 	int err;
-	char buf[1];
+	char buf[1] = {0};
 	volatile snd_ctl_shm_ctrl_t *ctrl = shm->ctrl;
 	err = write(shm->socket, buf, 1);
 	if (err != 1)
@@ -502,7 +502,7 @@ int snd_ctl_shm_open(snd_ctl_t **handlep, const char *name, const char *sockname
 	shm->socket = sock;
 	shm->ctrl = ctrl;
 
-	err = snd_ctl_new(&ctl, SND_CTL_TYPE_SHM, name);
+	err = snd_ctl_new(&ctl, SND_CTL_TYPE_SHM, name, mode);
 	if (err < 0) {
 		result = err;
 		goto _err;
