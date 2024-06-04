@@ -59,12 +59,23 @@ static int get_value3(snd_use_case_mgr_t *uc_mgr,
 		      struct list_head *value_list2,
 		      struct list_head *value_list3);
 
+static int execute_sequence(snd_use_case_mgr_t *uc_mgr,
+			    struct use_case_verb *verb,
+			    struct list_head *seq,
+			    struct list_head *value_list1,
+			    struct list_head *value_list2,
+			    struct list_head *value_list3);
+
 static int execute_component_seq(snd_use_case_mgr_t *uc_mgr,
 				 struct component_sequence *cmpt_seq,
 				 struct list_head *value_list1,
 				 struct list_head *value_list2,
 				 struct list_head *value_list3,
 				 char *cdev);
+
+static inline struct use_case_device *
+	find_device(snd_use_case_mgr_t *uc_mgr, struct use_case_verb *verb,
+		    const char *device_name, int check_supported);
 
 static int check_identifier(const char *identifier, const char *prefix)
 {
@@ -155,7 +166,7 @@ static int read_tlv_file(unsigned int **res,
 {
 	int err = 0;
 	int fd;
-	struct stat st;
+	struct stat64 st;
 	size_t sz;
 	ssize_t sz_read;
 	struct snd_ctl_tlv *tlv;
@@ -165,7 +176,7 @@ static int read_tlv_file(unsigned int **res,
 		err = -errno;
 		return err;
 	}
-	if (fstat(fd, &st) == -1) {
+	if (fstat64(fd, &st) == -1) {
 		err = -errno;
 		goto __fail;
 	}
@@ -207,7 +218,7 @@ static int binary_file_parse(snd_ctl_elem_value_t *dst,
 {
 	int err = 0;
 	int fd;
-	struct stat st;
+	struct stat64 st;
 	size_t sz;
 	ssize_t sz_read;
 	char *res;
@@ -225,7 +236,7 @@ static int binary_file_parse(snd_ctl_elem_value_t *dst,
 		err = -errno;
 		return err;
 	}
-	if (stat(filepath, &st) == -1) {
+	if (stat64(filepath, &st) == -1) {
 		err = -errno;
 		goto __fail;
 	}
@@ -296,7 +307,7 @@ static const char *parse_uint(const char *p, const char *prefix, size_t len,
 		uc_error("unable to parse '%s'", prefix);
 		return NULL;
 	}
-	if (v < min || v > max) {
+	if ((unsigned int)v < min || (unsigned int)v > max) {
 		uc_error("value '%s' out of range %u-%u %(%ld)", min, max, v);
 		return NULL;
 	}
@@ -496,7 +507,7 @@ static int execute_cset(snd_ctl_t *ctl, const char *cset, unsigned int type)
 	free(value);
 	if (info2) {
 		if (info2->type == SND_CTL_ELEM_TYPE_ENUMERATED)
-			free((void *)info2->value.enumerated.names_ptr);
+			free((void *)(size_t)info2->value.enumerated.names_ptr);
 		free(info2);
 	}
 	free(info);
@@ -561,16 +572,18 @@ static int execute_sysw(const char *sysw)
 	wlen = write(fd, value, len);
 	myerrno = errno;
 	close(fd);
-	free(s);
 
 	if (ignore_error)
-		return 0;
+		goto __end;
 
 	if (wlen != (ssize_t)len) {
 		uc_error("unable to write '%s' to '%s': %s", value, path, strerror(myerrno));
+		free(s);
 		return -EINVAL;
 	}
 
+__end:
+	free(s);
 	return 0;
 }
 
@@ -660,6 +673,54 @@ static int rewrite_device_value(snd_use_case_mgr_t *uc_mgr, const char *name, ch
 	return 0;
 }
 
+static int run_device_sequence(snd_use_case_mgr_t *uc_mgr, struct use_case_verb *verb,
+			       const char *name, bool enable)
+{
+	struct use_case_device *device;
+
+	if (verb == NULL) {
+		uc_error("error: enadev2 / disdev2 must be executed inside the verb context");
+		return -ENOENT;
+	}
+
+	device = find_device(uc_mgr, verb, name, 0);
+	if (device == NULL) {
+		uc_error("error: unable to find device '%s'\n", name);
+		return -ENOENT;
+	}
+
+	return execute_sequence(uc_mgr, verb,
+				enable ? &device->enable_list : &device->disable_list,
+				&device->value_list,
+				&verb->value_list,
+				&uc_mgr->value_list);
+}
+
+static int run_device_all_sequence(snd_use_case_mgr_t *uc_mgr, struct use_case_verb *verb)
+{
+	struct use_case_device *device;
+	struct list_head *pos;
+	int err;
+
+	if (verb == NULL) {
+		uc_error("error: disdevall must be executed inside the verb context");
+		return -ENOENT;
+	}
+
+	list_for_each(pos, &verb->device_list) {
+		device = list_entry(pos, struct use_case_device, list);
+
+		err = execute_sequence(uc_mgr, verb,
+					&device->disable_list,
+					&device->value_list,
+					&verb->value_list,
+					&uc_mgr->value_list);
+		if (err < 0)
+			return err;
+	}
+	return 0;
+}
+
 /**
  * \brief Execute the sequence
  * \param uc_mgr Use case manager
@@ -667,6 +728,7 @@ static int rewrite_device_value(snd_use_case_mgr_t *uc_mgr, const char *name, ch
  * \return zero on success, otherwise a negative error code
  */
 static int execute_sequence(snd_use_case_mgr_t *uc_mgr,
+			    struct use_case_verb *verb,
 			    struct list_head *seq,
 			    struct list_head *value_list1,
 			    struct list_head *value_list2,
@@ -680,6 +742,11 @@ static int execute_sequence(snd_use_case_mgr_t *uc_mgr,
 	bool ignore_error;
 	int err = 0;
 
+	if (uc_mgr->sequence_hops > 100) {
+		uc_error("error: too many inner sequences!");
+		return -EINVAL;
+	}
+	uc_mgr->sequence_hops++;
 	list_for_each(pos, seq) {
 		s = list_entry(pos, struct sequence_element, list);
 		switch (s->type) {
@@ -819,17 +886,31 @@ shell_retry:
 			if (err < 0)
 				goto __fail;
 			break;
+		case SEQUENCE_ELEMENT_TYPE_DEV_ENABLE_SEQ:
+		case SEQUENCE_ELEMENT_TYPE_DEV_DISABLE_SEQ:
+			err = run_device_sequence(uc_mgr, verb, s->data.device,
+							s->type == SEQUENCE_ELEMENT_TYPE_DEV_ENABLE_SEQ);
+			if (err < 0)
+				goto __fail;
+			break;
+		case SEQUENCE_ELEMENT_TYPE_DEV_DISABLE_ALL:
+			err = run_device_all_sequence(uc_mgr, verb);
+			if (err < 0)
+				goto __fail;
+			break;
 		default:
 			uc_error("unknown sequence command %i", s->type);
 			break;
 		}
 	}
 	free(cdev);
+	uc_mgr->sequence_hops--;
 	return 0;
       __fail_nomem:
 	err = -ENOMEM;
       __fail:
 	free(cdev);
+	uc_mgr->sequence_hops--;
 	return err;
 
 }
@@ -865,7 +946,7 @@ static int execute_component_seq(snd_use_case_mgr_t *uc_mgr,
 		seq = &device->disable_list;
 
 	/* excecute the sequence of the component dev */
-	err = execute_sequence(uc_mgr, seq,
+	err = execute_sequence(uc_mgr, uc_mgr->active_verb, seq,
 			       &device->value_list,
 			       &uc_mgr->active_verb->value_list,
 			       &uc_mgr->value_list);
@@ -919,15 +1000,16 @@ static int add_auto_values(snd_use_case_mgr_t *uc_mgr)
 /**
  * \brief execute default commands
  * \param uc_mgr Use case manager
+ * \param force Force run
  * \return zero on success, otherwise a negative error code
  */
-static int set_defaults(snd_use_case_mgr_t *uc_mgr)
+static int set_defaults(snd_use_case_mgr_t *uc_mgr, bool force)
 {
 	int err;
 
-	if (uc_mgr->default_list_executed)
+	if (!force && uc_mgr->default_list_executed)
 		return 0;
-	err = execute_sequence(uc_mgr, &uc_mgr->default_list,
+	err = execute_sequence(uc_mgr, NULL, &uc_mgr->default_list,
 			       &uc_mgr->value_list, NULL, NULL);
 	if (err < 0) {
 		uc_error("Unable to execute default sequence");
@@ -1272,14 +1354,14 @@ static int set_verb(snd_use_case_mgr_t *uc_mgr,
 	int err;
 
 	if (enable) {
-		err = set_defaults(uc_mgr);
+		err = set_defaults(uc_mgr, false);
 		if (err < 0)
 			return err;
 		seq = &verb->enable_list;
 	} else {
 		seq = &verb->disable_list;
 	}
-	err = execute_sequence(uc_mgr, seq,
+	err = execute_sequence(uc_mgr, verb, seq,
 			       &verb->value_list,
 			       &uc_mgr->value_list,
 			       NULL);
@@ -1310,7 +1392,7 @@ static int set_modifier(snd_use_case_mgr_t *uc_mgr,
 	} else {
 		seq = &modifier->disable_list;
 	}
-	err = execute_sequence(uc_mgr, seq,
+	err = execute_sequence(uc_mgr, uc_mgr->active_verb, seq,
 			       &modifier->value_list,
 			       &uc_mgr->active_verb->value_list,
 			       &uc_mgr->value_list);
@@ -1344,7 +1426,7 @@ static int set_device(snd_use_case_mgr_t *uc_mgr,
 	} else {
 		seq = &device->disable_list;
 	}
-	err = execute_sequence(uc_mgr, seq,
+	err = execute_sequence(uc_mgr, uc_mgr->active_verb, seq,
 			       &device->value_list,
 			       &uc_mgr->active_verb->value_list,
 			       &uc_mgr->value_list);
@@ -1357,11 +1439,72 @@ static int set_device(snd_use_case_mgr_t *uc_mgr,
 }
 
 /**
- * \brief Init sound card use case manager.
- * \param uc_mgr Returned use case manager pointer
- * \param card_name name of card to open
+ * \brief Do the full reset
+ * \param uc_mgr Use case manager
  * \return zero on success, otherwise a negative error code
  */
+static int do_reset(snd_use_case_mgr_t *uc_mgr)
+{
+	int err;
+
+	err = set_defaults(uc_mgr, true);
+	INIT_LIST_HEAD(&uc_mgr->active_modifiers);
+	INIT_LIST_HEAD(&uc_mgr->active_devices);
+	uc_mgr->active_verb = NULL;
+	return err;
+}
+
+/**
+ * \brief Parse open arguments
+ * \param uc_mgr Use case manager
+ * \param name name of card to open
+ * \return the rest of the card name to open
+ */
+const char *parse_open_variables(snd_use_case_mgr_t *uc_mgr, const char *name)
+{
+	const char *end, *id;
+	char *args, *var;
+	snd_config_t *cfg, *n;
+	snd_config_iterator_t i, next;
+	char vname[128];
+	size_t l;
+	int err;
+
+	end = strstr(name, ">>>");
+	if (end == NULL)
+		return name;
+	l = end - name - 3;
+	args = alloca(l + 1);
+	strncpy(args, name + 3, l);
+	args[l] = '\0';
+
+	err = snd_config_load_string(&cfg, args, 0);
+	if (err < 0) {
+		uc_error("error: open arguments are not valid (%s)", args);
+		goto skip;
+	}
+
+	/* set arguments */
+	snd_config_for_each(i, next, cfg) {
+		n = snd_config_iterator_entry(i);
+		err = snd_config_get_id(n, &id);
+		if (err < 0)
+			goto skip;
+		err = snd_config_get_ascii(n, &var);
+		if (err < 0)
+			goto skip;
+		snprintf(vname, sizeof(vname), "@%s", id);
+		err = uc_mgr_set_variable(uc_mgr, vname, var);
+		free(var);
+		if (err < 0)
+			goto skip;
+	}
+
+skip:
+	snd_config_delete(cfg);
+	return end + 3;
+}
+
 int snd_use_case_mgr_open(snd_use_case_mgr_t **uc_mgr,
 			  const char *card_name)
 {
@@ -1388,15 +1531,14 @@ int snd_use_case_mgr_open(snd_use_case_mgr_t **uc_mgr,
 		mgr->suppress_nodev_errors = 1;
 	}
 
+	if (card_name && card_name[0] == '<' && card_name[1] == '<' && card_name[2] == '<')
+		card_name = parse_open_variables(mgr, card_name);
+
 	err = uc_mgr_card_open(mgr);
 	if (err < 0) {
 		uc_mgr_free(mgr);
 		return err;
 	}
-
-	err = snd_config_top(&mgr->local_config);
-	if (err < 0)
-		goto _err;
 
 	mgr->card_name = strdup(card_name);
 	if (mgr->card_name == NULL) {
@@ -1429,16 +1571,13 @@ _err:
 	return err;
 }
 
-/**
- * \brief Reload and reparse all use case files.
- * \param uc_mgr Use case manager
- * \return zero on success, otherwise a negative error code
- */
 int snd_use_case_mgr_reload(snd_use_case_mgr_t *uc_mgr)
 {
 	int err;
 
 	pthread_mutex_lock(&uc_mgr->mutex);
+
+	do_reset(uc_mgr);
 
 	uc_mgr_free_verb(uc_mgr);
 
@@ -1456,11 +1595,6 @@ int snd_use_case_mgr_reload(snd_use_case_mgr_t *uc_mgr)
 	return err;
 }
 
-/**
- * \brief Close use case manager.
- * \param uc_mgr Use case manager
- * \return zero on success, otherwise a negative error code
- */
 int snd_use_case_mgr_close(snd_use_case_mgr_t *uc_mgr)
 {
 	uc_mgr_card_close(uc_mgr);
@@ -1504,27 +1638,17 @@ static int dismantle_use_case(snd_use_case_mgr_t *uc_mgr)
 	}
 	uc_mgr->active_verb = NULL;
 
-	err = execute_sequence(uc_mgr, &uc_mgr->default_list,
-			       &uc_mgr->value_list, NULL, NULL);
+	err = set_defaults(uc_mgr, true);
 	
 	return err;
 }
 
-/**
- * \brief Reset sound card controls to default values.
- * \param uc_mgr Use case manager
- * \return zero on success, otherwise a negative error code
- */
 int snd_use_case_mgr_reset(snd_use_case_mgr_t *uc_mgr)
 {
 	int err;
 
 	pthread_mutex_lock(&uc_mgr->mutex);
-	err = execute_sequence(uc_mgr, &uc_mgr->default_list,
-			       &uc_mgr->value_list, NULL, NULL);
-	INIT_LIST_HEAD(&uc_mgr->active_modifiers);
-	INIT_LIST_HEAD(&uc_mgr->active_devices);
-	uc_mgr->active_verb = NULL;
+	err = do_reset(uc_mgr);
 	pthread_mutex_unlock(&uc_mgr->mutex);
 	return err;
 }
@@ -1950,13 +2074,6 @@ static int get_enabled_modifier_list(snd_use_case_mgr_t *uc_mgr,
 			name);
 }
 
-/**
- * \brief Obtain a list of entries
- * \param uc_mgr Use case manager (may be NULL - card list)
- * \param identifier (may be NULL - card list)
- * \param list Returned allocated list
- * \return Number of list entries if success, otherwise a negative error code
- */
 int snd_use_case_get_list(snd_use_case_mgr_t *uc_mgr,
 			  const char *identifier,
 			  const char **list[])
@@ -2167,16 +2284,6 @@ static int get_alibpref(snd_use_case_mgr_t *uc_mgr, char **str)
 	return 0;
 }
 
-/**
- * \brief Get current - string
- * \param uc_mgr Use case manager
- * \param identifier 
- * \param value Value pointer
- * \return Zero if success, otherwise a negative error code
- *
- * Note: String is dynamically allocated, use free() to
- * deallocate this string.
- */      
 int snd_use_case_get(snd_use_case_mgr_t *uc_mgr,
 		     const char *identifier,
 		     const char **value)
@@ -2270,19 +2377,31 @@ int snd_use_case_get(snd_use_case_mgr_t *uc_mgr,
 	return err;
 }
 
-
-/**
- * \brief Get current - integer
- * \param uc_mgr Use case manager
- * \param identifier 
- * \return Value if success, otherwise a negative error code 
+/*
+ * a helper macro to obtain status and existence
  */
+#define geti(uc_mgr, status, ifind, str, value) ({ \
+	long val = -EINVAL; \
+	if (str) { \
+		val = (status)((uc_mgr), (str)); \
+		if (val >= 0) { \
+			if ((ifind)((uc_mgr), (uc_mgr)->active_verb, (str), 0)) { \
+				*(value) = val; \
+				val = 0; \
+			} else { \
+				val = -ENOENT; \
+			} \
+		} \
+	} \
+	; val; /* return value */ \
+})
+
 int snd_use_case_geti(snd_use_case_mgr_t *uc_mgr,
 		      const char *identifier,
 		      long *value)
 {
 	char *str, *str1;
-	long err;
+	int err;
 
 	pthread_mutex_lock(&uc_mgr->mutex);
 	if (0) {
@@ -2299,31 +2418,15 @@ int snd_use_case_geti(snd_use_case_mgr_t *uc_mgr,
 			str = NULL;
 		}
 		if (check_identifier(identifier, "_devstatus")) {
-			if (!str) {
-				err = -EINVAL;
-				goto __end;
-			}
-			err = device_status(uc_mgr, str);
-			if (err >= 0) {
-				*value = err;
-				err = 0;
-			}
+			err = geti(uc_mgr, device_status, find_device, str, value);
 		} else if (check_identifier(identifier, "_modstatus")) {
-			if (!str) {
-				err = -EINVAL;
-				goto __end;
-			}
-			err = modifier_status(uc_mgr, str);
-			if (err >= 0) {
-				*value = err;
-				err = 0;
-			}
+			err = geti(uc_mgr, modifier_status, find_modifier, str, value);
 #if 0
 		/*
 		 * enable this block if the else clause below is expanded to query
 		 * user-supplied values
 		 */
-		} else if (identifier[0] == '_')
+		} else if (identifier[0] == '_') {
 			err = -ENOENT;
 #endif
 		} else
@@ -2347,7 +2450,7 @@ static int set_fixedboot_user(snd_use_case_mgr_t *uc_mgr,
 	}
 	if (list_empty(&uc_mgr->fixedboot_list))
 		return -ENOENT;
-	err = execute_sequence(uc_mgr, &uc_mgr->fixedboot_list,
+	err = execute_sequence(uc_mgr, NULL, &uc_mgr->fixedboot_list,
 			       &uc_mgr->value_list, NULL, NULL);
 	if (err < 0) {
 		uc_error("Unable to execute force boot sequence");
@@ -2367,7 +2470,7 @@ static int set_boot_user(snd_use_case_mgr_t *uc_mgr,
 	}
 	if (list_empty(&uc_mgr->boot_list))
 		return -ENOENT;
-	err = execute_sequence(uc_mgr, &uc_mgr->boot_list,
+	err = execute_sequence(uc_mgr, NULL, &uc_mgr->boot_list,
 			       &uc_mgr->value_list, NULL, NULL);
 	if (err < 0) {
 		uc_error("Unable to execute boot sequence");
@@ -2383,7 +2486,7 @@ static int set_defaults_user(snd_use_case_mgr_t *uc_mgr,
 		uc_error("error: wrong value for _defaults (%s)", value);
 		return -EINVAL;
 	}
-	return set_defaults(uc_mgr);
+	return set_defaults(uc_mgr, false);
 }
 
 static int handle_transition_verb(snd_use_case_mgr_t *uc_mgr,
@@ -2396,7 +2499,8 @@ static int handle_transition_verb(snd_use_case_mgr_t *uc_mgr,
 	list_for_each(pos, &uc_mgr->active_verb->transition_list) {
 		trans = list_entry(pos, struct transition_sequence, list);
 		if (strcmp(trans->name, new_verb->name) == 0) {
-			err = execute_sequence(uc_mgr, &trans->transition_list,
+			err = execute_sequence(uc_mgr, uc_mgr->active_verb,
+					       &trans->transition_list,
 					       &uc_mgr->active_verb->value_list,
 					       &uc_mgr->value_list,
 					       NULL);
@@ -2507,7 +2611,8 @@ static int switch_device(snd_use_case_mgr_t *uc_mgr,
 	list_for_each(pos, &xold->transition_list) {
 		trans = list_entry(pos, struct transition_sequence, list);
 		if (strcmp(trans->name, new_device) == 0) {
-			err = execute_sequence(uc_mgr, &trans->transition_list,
+			err = execute_sequence(uc_mgr, uc_mgr->active_verb,
+					       &trans->transition_list,
 					       &xold->value_list,
 					       &uc_mgr->active_verb->value_list,
 					       &uc_mgr->value_list);
@@ -2559,7 +2664,8 @@ static int switch_modifier(snd_use_case_mgr_t *uc_mgr,
 	list_for_each(pos, &xold->transition_list) {
 		trans = list_entry(pos, struct transition_sequence, list);
 		if (strcmp(trans->name, new_modifier) == 0) {
-			err = execute_sequence(uc_mgr, &trans->transition_list,
+			err = execute_sequence(uc_mgr, uc_mgr->active_verb,
+					       &trans->transition_list,
 					       &xold->value_list,
 					       &uc_mgr->active_verb->value_list,
 					       &uc_mgr->value_list);
@@ -2582,13 +2688,6 @@ static int switch_modifier(snd_use_case_mgr_t *uc_mgr,
 	return err;
 }
 
-/**
- * \brief Set new
- * \param uc_mgr Use case manager
- * \param identifier
- * \param value Value
- * \return Zero if success, otherwise a negative error code
- */
 int snd_use_case_set(snd_use_case_mgr_t *uc_mgr,
 		     const char *identifier,
 		     const char *value)
@@ -2641,7 +2740,7 @@ int snd_use_case_set(snd_use_case_mgr_t *uc_mgr,
 
 /**
  * \brief Parse control element identifier
- * \param elem_id Element identifier
+ * \param dst Element identifier
  * \param ucm_id Use case identifier
  * \param value String value to be parsed
  * \return Zero if success, otherwise a negative error code
@@ -2661,7 +2760,7 @@ int snd_use_case_parse_ctl_elem_id(snd_ctl_elem_id_t *dst,
 	    strcmp(ucm_id, "CaptureSwitch"))
 		return -EINVAL;
 	snd_ctl_elem_id_clear(dst);
-	if (strcasestr(ucm_id, "name="))
+	if (strcasestr(value, "name="))
 		return __snd_ctl_ascii_elem_id_parse(dst, value, NULL);
 	iface = SND_CTL_ELEM_IFACE_MIXER;
 	if (jack_control)

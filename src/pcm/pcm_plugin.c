@@ -82,9 +82,9 @@ pcm.rate44100Hz {
 
 */
   
-#include <limits.h>
 #include "pcm_local.h"
 #include "pcm_plugin.h"
+#include <limits.h>
 
 #ifndef DOC_HIDDEN
 
@@ -574,8 +574,10 @@ static int snd_pcm_plugin_status(snd_pcm_t *pcm, snd_pcm_status_t * status)
 	return 0;
 }
 
-int snd_pcm_plugin_may_wait_for_avail_min(snd_pcm_t *pcm,
-					  snd_pcm_uframes_t avail)
+int snd_pcm_plugin_may_wait_for_avail_min_conv(
+				snd_pcm_t *pcm,
+				snd_pcm_uframes_t avail,
+				snd_pcm_uframes_t (*conv)(snd_pcm_t *, snd_pcm_uframes_t))
 {
 	if (pcm->stream == SND_PCM_STREAM_CAPTURE &&
 	    pcm->access != SND_PCM_ACCESS_RW_INTERLEAVED &&
@@ -595,8 +597,12 @@ int snd_pcm_plugin_may_wait_for_avail_min(snd_pcm_t *pcm,
 		 * a) the slave can provide contineous hw_ptr between periods
 		 * b) avail_min does not match one slave_period
 		 */
-		snd_pcm_plugin_t *plugin = pcm->private_data;
-		snd_pcm_t *slave = plugin->gen.slave;
+		snd_pcm_generic_t *generic = pcm->private_data;
+		/*
+		 * do not use snd_pcm_plugin_t pointer here
+		 * this code is used from the generic plugins, too
+		 */
+		snd_pcm_t *slave = generic->slave;
 		snd_pcm_uframes_t needed_slave_avail_min;
 		snd_pcm_sframes_t available;
 
@@ -614,6 +620,14 @@ int snd_pcm_plugin_may_wait_for_avail_min(snd_pcm_t *pcm,
 			return 0;
 
 		needed_slave_avail_min = pcm->avail_min - available;
+
+		/* proportional adaption if rate converter is in place..
+		 * Can happen only on built-in rate plugin.
+		 * This code is also used by extplug, but extplug does not allow to alter the sampling rate.
+		 */
+		if (conv)
+			needed_slave_avail_min = conv(pcm, needed_slave_avail_min);
+
 		if (slave->avail_min != needed_slave_avail_min) {
 			snd_pcm_sw_params_t *swparams;
 			snd_pcm_sw_params_alloca(&swparams);
@@ -634,6 +648,12 @@ int snd_pcm_plugin_may_wait_for_avail_min(snd_pcm_t *pcm,
 		avail = available;
 	}
 	return snd_pcm_generic_may_wait_for_avail_min(pcm, avail);
+}
+
+int snd_pcm_plugin_may_wait_for_avail_min(snd_pcm_t *pcm,
+					  snd_pcm_uframes_t avail)
+{
+	return snd_pcm_plugin_may_wait_for_avail_min_conv(pcm, avail, NULL);
 }
 
 const snd_pcm_fast_ops_t snd_pcm_plugin_fast_ops = {

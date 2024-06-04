@@ -31,11 +31,12 @@
  */
 
 #include "ucm_local.h"
+#include <sys/stat.h>
 #include <stdbool.h>
 #include <dirent.h>
 #include <limits.h>
 
-static int filename_filter(const struct dirent *dirent);
+static int filename_filter(const struct dirent64 *dirent);
 
 static int parse_sequence(snd_use_case_mgr_t *uc_mgr,
 			  struct list_head *base,
@@ -93,7 +94,7 @@ static char *replace_string(char **dst, const char *value)
 /*
  * Parse string
  */
-int parse_string(snd_config_t *n, char **res)
+static int parse_string(snd_config_t *n, char **res)
 {
 	int err;
 
@@ -109,7 +110,7 @@ int parse_string(snd_config_t *n, char **res)
 /*
  * Parse string and substitute
  */
-int parse_string_substitute(snd_use_case_mgr_t *uc_mgr,
+static int parse_string_substitute(snd_use_case_mgr_t *uc_mgr,
 			    snd_config_t *n, char **res)
 {
 	const char *str;
@@ -128,7 +129,7 @@ int parse_string_substitute(snd_use_case_mgr_t *uc_mgr,
 /*
  * Parse string and substitute
  */
-int parse_string_substitute3(snd_use_case_mgr_t *uc_mgr,
+static int parse_string_substitute3(snd_use_case_mgr_t *uc_mgr,
 			     snd_config_t *n, char **res)
 {
 	if (uc_mgr->conf_format < 3)
@@ -139,7 +140,7 @@ int parse_string_substitute3(snd_use_case_mgr_t *uc_mgr,
 /*
  * Parse integer with substitution
  */
-int parse_integer_substitute(snd_use_case_mgr_t *uc_mgr,
+static int parse_integer_substitute(snd_use_case_mgr_t *uc_mgr,
 			     snd_config_t *n, long *res)
 {
 	char *s1, *s2;
@@ -159,7 +160,7 @@ int parse_integer_substitute(snd_use_case_mgr_t *uc_mgr,
 /*
  * Parse integer with substitution
  */
-int parse_integer_substitute3(snd_use_case_mgr_t *uc_mgr,
+static int parse_integer_substitute3(snd_use_case_mgr_t *uc_mgr,
 			      snd_config_t *n, long *res)
 {
 	char *s1, *s2;
@@ -183,7 +184,7 @@ int parse_integer_substitute3(snd_use_case_mgr_t *uc_mgr,
 /*
  * Parse safe ID
  */
-int parse_is_name_safe(const char *name)
+static int parse_is_name_safe(const char *name)
 {
 	if (strchr(name, '.')) {
 		uc_error("char '.' not allowed in '%s'", name);
@@ -192,7 +193,7 @@ int parse_is_name_safe(const char *name)
 	return 1;
 }
 
-int get_string3(snd_use_case_mgr_t *uc_mgr, const char *s1, char **s)
+static int get_string3(snd_use_case_mgr_t *uc_mgr, const char *s1, char **s)
 {
 	if (uc_mgr->conf_format < 3) {
 		*s = strdup(s1);
@@ -203,7 +204,7 @@ int get_string3(snd_use_case_mgr_t *uc_mgr, const char *s1, char **s)
 	return uc_mgr_get_substituted_value(uc_mgr, s, s1);
 }
 
-int parse_get_safe_name(snd_use_case_mgr_t *uc_mgr, snd_config_t *n,
+static int parse_get_safe_name(snd_use_case_mgr_t *uc_mgr, snd_config_t *n,
 			const char *alt, char **name)
 {
 	const char *id;
@@ -246,6 +247,36 @@ static int error_node(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg)
 }
 
 /*
+ *
+ */
+static int parse_syntax_field(snd_use_case_mgr_t *uc_mgr,
+			      snd_config_t *cfg, const char *filename)
+{
+	snd_config_t *n;
+	long l;
+	int err;
+
+	err = snd_config_search(cfg, "Syntax", &n);
+	if (err < 0) {
+		uc_error("Syntax field not found in %s", filename);
+		return -EINVAL;
+	}
+	err = snd_config_get_integer(n, &l);
+	if (err < 0) {
+		uc_error("Syntax field is invalid in %s", filename);
+		return err;
+	}
+	if (l < 2 || l > SYNTAX_VERSION_MAX) {
+		uc_error("Incompatible syntax %ld in %s", l, filename);
+		return -EINVAL;
+	}
+	/* delete this field to optimize strcmp() call in the parsing loop */
+	snd_config_delete(n);
+	uc_mgr->conf_format = l;
+	return l;
+}
+
+/*
  * Evaluate variable regex definitions (in-place delete)
  */
 static int evaluate_regex(snd_use_case_mgr_t *uc_mgr,
@@ -277,6 +308,10 @@ static int evaluate_regex(snd_use_case_mgr_t *uc_mgr,
 		err = snd_config_get_id(n, &id);
 		if (err < 0)
 			return err;
+		if (id[0] == '@') {
+			uc_error("error: value names starting with '@' are reserved for application variables");
+			return -EINVAL;
+		}
 		err = uc_mgr_define_regex(uc_mgr, id, n);
 		if (err < 0)
 			return err;
@@ -326,13 +361,181 @@ static int evaluate_define(snd_use_case_mgr_t *uc_mgr,
 		free(var);
 		if (err < 0)
 			return err;
-		uc_mgr_set_variable(uc_mgr, id, s);
+		if (id[0] == '@') {
+			free(s);
+			uc_error("error: value names starting with '@' are reserved for application variables");
+			return -EINVAL;
+		}
+		err = uc_mgr_set_variable(uc_mgr, id, s);
 		free(s);
+		if (err < 0)
+			return err;
 	}
 
 	snd_config_delete(d);
 
 	return evaluate_regex(uc_mgr, cfg);
+}
+
+/*
+ * Evaluate macro definitions (in-place delete)
+ */
+static int evaluate_define_macro(snd_use_case_mgr_t *uc_mgr,
+				 snd_config_t *cfg)
+{
+	snd_config_t *d;
+	int err;
+
+	err = snd_config_search(cfg, "DefineMacro", &d);
+	if (err == -ENOENT)
+		return 1;
+	if (err < 0)
+		return err;
+
+	if (snd_config_get_type(d) != SND_CONFIG_TYPE_COMPOUND) {
+		uc_error("compound type expected for DefineMacro");
+		return -EINVAL;
+	}
+
+	if (uc_mgr->conf_format < 6) {
+		uc_error("DefineMacro is supported in v6+ syntax");
+		return -EINVAL;
+	}
+
+	err = snd_config_merge(uc_mgr->macros, d, 0);
+	if (err < 0)
+		return err;
+	return 0;
+}
+
+static int evaluate_macro1(snd_use_case_mgr_t *uc_mgr,
+			   snd_config_t *dst,
+			   snd_config_t *args)
+{
+	snd_config_iterator_t i, next;
+	snd_config_t *m, *mc, *a, *n;
+	const char *mid, *id;
+	char name[128], *var;
+	const char *s;
+	int err;
+
+	err = snd_config_get_id(args, &mid);
+	if (err < 0)
+		return err;
+	err = snd_config_search(uc_mgr->macros, mid, &m);
+	if (err < 0) {
+		uc_error("Macro '%s' is not defined", mid);
+		return err;
+	}
+
+	a = args;
+	if (snd_config_get_type(args) == SND_CONFIG_TYPE_STRING) {
+		err = snd_config_get_string(args, &s);
+		if (err < 0)
+			return err;
+		err = snd_config_load_string(&a, s, 0);
+		if (err < 0)
+			return err;
+	} else if (snd_config_get_type(args) != SND_CONFIG_TYPE_COMPOUND) {
+		return -EINVAL;
+	}
+
+	/* set arguments */
+	snd_config_for_each(i, next, a) {
+		n = snd_config_iterator_entry(i);
+		err = snd_config_get_id(n, &id);
+		if (err < 0)
+			goto __err_path;
+		err = snd_config_get_ascii(n, &var);
+		if (err < 0)
+			goto __err_path;
+		snprintf(name, sizeof(name), "__%s", id);
+		err = uc_mgr_set_variable(uc_mgr, name, var);
+		free(var);
+		if (err < 0)
+			goto __err_path;
+	}
+
+	/* merge + substitute variables */
+	err = snd_config_copy(&mc, m);
+	if (err < 0)
+		goto __err_path;
+	err = uc_mgr_evaluate_inplace(uc_mgr, mc);
+	if (err < 0) {
+		snd_config_delete(mc);
+		goto __err_path;
+	}
+	err = uc_mgr_config_tree_merge(uc_mgr, dst, mc, NULL, NULL);
+	snd_config_delete(mc);
+
+	/* delete arguments */
+	snd_config_for_each(i, next, a) {
+		n = snd_config_iterator_entry(i);
+		err = snd_config_get_id(n, &id);
+		if (err < 0)
+			goto __err_path;
+		snprintf(name, sizeof(name), "__%s", id);
+		err = uc_mgr_delete_variable(uc_mgr, name);
+		if (err < 0)
+			goto __err_path;
+	}
+
+__err_path:
+	if (a != args)
+		snd_config_delete(a);
+	return err;
+}
+
+/*
+ * Evaluate macro definitions and instances (in-place delete)
+ */
+static int evaluate_macro(snd_use_case_mgr_t *uc_mgr,
+			  snd_config_t *cfg)
+{
+	snd_config_iterator_t i, i2, next, next2;
+	snd_config_t *d, *n, *n2;
+	int err, ret;
+
+	ret = evaluate_define_macro(uc_mgr, cfg);
+	if (ret < 0)
+		return ret;
+
+	err = snd_config_search(cfg, "Macro", &d);
+	if (err == -ENOENT)
+		return ret;
+	if (err < 0)
+		return err;
+
+	if (snd_config_get_type(d) != SND_CONFIG_TYPE_COMPOUND) {
+		uc_error("compound type expected for DefineMacro");
+		return -EINVAL;
+	}
+
+	if (uc_mgr->conf_format < 6) {
+		uc_error("Macro is supported in v6+ syntax");
+		return -EINVAL;
+	}
+
+	snd_config_for_each(i, next, d) {
+		n = snd_config_iterator_entry(i);
+		if (snd_config_get_type(n) != SND_CONFIG_TYPE_COMPOUND) {
+			const char *id;
+			if (snd_config_get_id(n, &id))
+				id = "";
+			uc_error("compound type expected for Macro.%s", id);
+			return -EINVAL;
+		}
+		snd_config_for_each(i2, next2, n) {
+			n2 = snd_config_iterator_entry(i2);
+			err = evaluate_macro1(uc_mgr, cfg, n2);
+			if (err < 0)
+				return err;
+		}
+	}
+
+	snd_config_delete(d);
+
+	return 0;
 }
 
 /*
@@ -358,8 +561,7 @@ static int evaluate_include(snd_use_case_mgr_t *uc_mgr,
 /*
  * Evaluate condition (in-place)
  */
-static int evaluate_condition(snd_use_case_mgr_t *uc_mgr,
-			      snd_config_t *cfg)
+static int evaluate_condition(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg)
 {
 	snd_config_t *n;
 	int err;
@@ -376,14 +578,72 @@ static int evaluate_condition(snd_use_case_mgr_t *uc_mgr,
 }
 
 /*
+ * Evaluate variant (in-place)
+ */
+static int evaluate_variant(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg)
+{
+	snd_config_iterator_t i, next;
+	snd_config_t *n, *c;
+	const char *id;
+	int err;
+
+	err = snd_config_search(cfg, "Variant", &c);
+	if (err == -ENOENT)
+		return 1;
+	if (err < 0)
+		return err;
+
+	if (uc_mgr->conf_format < 6) {
+		uc_error("Variant is supported in v6+ syntax");
+		return -EINVAL;
+	}
+
+	if (uc_mgr->parse_master_section)
+		return 1;
+
+	if (uc_mgr->parse_variant == NULL)
+		goto __ret;
+
+	snd_config_for_each(i, next, c) {
+		n = snd_config_iterator_entry(i);
+
+		if (snd_config_get_id(n, &id) < 0)
+			return -EINVAL;
+
+		if (strcmp(id, uc_mgr->parse_variant))
+			continue;
+
+		err = uc_mgr_evaluate_inplace(uc_mgr, n);
+		if (err < 0)
+			return err;
+
+		err = uc_mgr_config_tree_merge(uc_mgr, cfg, n, NULL, NULL);
+		if (err < 0)
+			return err;
+		snd_config_delete(c);
+		return 0;
+	}
+
+__ret:
+	snd_config_delete(c);
+	return 1;
+}
+
+/*
  * In-place evaluate
  */
 int uc_mgr_evaluate_inplace(snd_use_case_mgr_t *uc_mgr,
 			    snd_config_t *cfg)
 {
-	int err1 = 0, err2 = 0, err3 = 0;
+	long iterations = 10000;
+	int err1 = 0, err2 = 0, err3 = 0, err4 = 0, err5 = 0;
 
-	while (err1 == 0 || err2 == 0 || err3 == 0) {
+	while (err1 == 0 || err2 == 0 || err3 == 0 || err4 == 0 || err5 == 0) {
+		if (iterations == 0) {
+			uc_error("Maximal inplace evaluation iterations number reached (recursive references?)");
+			return -EINVAL;
+		}
+		iterations--;
 		/* variables at first */
 		err1 = evaluate_define(uc_mgr, cfg);
 		if (err1 < 0)
@@ -392,13 +652,29 @@ int uc_mgr_evaluate_inplace(snd_use_case_mgr_t *uc_mgr,
 		err2 = evaluate_include(uc_mgr, cfg);
 		if (err2 < 0)
 			return err2;
-		/* include may define another variables */
+		/* include or macro may define another variables */
 		/* conditions may depend on them */
 		if (err2 == 0)
 			continue;
-		err3 = evaluate_condition(uc_mgr, cfg);
+		err3 = evaluate_variant(uc_mgr, cfg);
 		if (err3 < 0)
 			return err3;
+		if (err3 == 0)
+			continue;
+		uc_mgr->macro_hops++;
+		if (uc_mgr->macro_hops > 100) {
+			uc_error("Maximal macro hops reached!");
+			return -EINVAL;
+		}
+		err4 = evaluate_macro(uc_mgr, cfg);
+		uc_mgr->macro_hops--;
+		if (err4 < 0)
+			return err4;
+		if (err4 == 0)
+			continue;
+		err5 = evaluate_condition(uc_mgr, cfg);
+		if (err5 < 0)
+			return err5;
 	}
 	return 0;
 }
@@ -830,27 +1106,38 @@ cset:
 			continue;
 		}
 
-		if (strcmp(cmd, "enadev") == 0) {
-			/* need to enable a component device */
+		if (strcmp(cmd, "enadev") == 0 ||
+		    strcmp(cmd, "disdev") == 0) {
+			/* need to enable or disable a component device */
 			curr->type = SEQUENCE_ELEMENT_TYPE_CMPT_SEQ;
-			err = parse_component_seq(uc_mgr, n, 1,
+			err = parse_component_seq(uc_mgr, n,
+						strcmp(cmd, "enadev") == 0,
 						&curr->data.cmpt_seq);
 			if (err < 0) {
-				uc_error("error: enadev requires a valid device!");
+				uc_error("error: %s requires a valid device!", cmd);
 				return err;
 			}
 			continue;
 		}
 
-		if (strcmp(cmd, "disdev") == 0) {
-			/* need to disable a component device */
-			curr->type = SEQUENCE_ELEMENT_TYPE_CMPT_SEQ;
-			err = parse_component_seq(uc_mgr, n, 0,
-						&curr->data.cmpt_seq);
+		if (strcmp(cmd, "enadev2") == 0) {
+			curr->type = SEQUENCE_ELEMENT_TYPE_DEV_ENABLE_SEQ;
+			goto device;
+		}
+
+		if (strcmp(cmd, "disdev2") == 0) {
+			curr->type = SEQUENCE_ELEMENT_TYPE_DEV_DISABLE_SEQ;
+device:
+			err = parse_string_substitute3(uc_mgr, n, &curr->data.device);
 			if (err < 0) {
-				uc_error("error: disdev requires a valid device!");
+				uc_error("error: %s requires a valid device!", cmd);
 				return err;
 			}
+			continue;
+		}
+
+		if (strcmp(cmd, "disdevall") == 0) {
+			curr->type = SEQUENCE_ELEMENT_TYPE_DEV_DISABLE_ALL;
 			continue;
 		}
 
@@ -1809,6 +2096,65 @@ static int parse_verb_file(snd_use_case_mgr_t *uc_mgr,
 }
 
 /*
+ * Parse variant information
+ */
+static int parse_variant(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg,
+			 char **_vfile, char **_vcomment)
+{
+	snd_config_iterator_t i, next;
+	snd_config_t *n;
+	char *file = NULL, *comment = NULL;
+	int err;
+
+	/* parse master config sections */
+	snd_config_for_each(i, next, cfg) {
+		const char *id;
+		n = snd_config_iterator_entry(i);
+		if (snd_config_get_id(n, &id) < 0)
+			continue;
+
+		/* get use case verb file name */
+		if (strcmp(id, "File") == 0) {
+			if (_vfile) {
+				err = parse_string_substitute3(uc_mgr, n, &file);
+				if (err < 0) {
+					uc_error("failed to get File");
+					goto __error;
+				}
+			}
+			continue;
+		}
+
+		/* get optional use case comment */
+		if (strncmp(id, "Comment", 7) == 0) {
+			if (_vcomment) {
+				err = parse_string_substitute3(uc_mgr, n, &comment);
+				if (err < 0) {
+					uc_error("error: failed to get Comment");
+					goto __error;
+				}
+			}
+			continue;
+		}
+
+		uc_error("unknown field '%s' in Variant section", id);
+		err = -EINVAL;
+		goto __error;
+	}
+
+	if (_vfile)
+		*_vfile = file;
+	if (_vcomment)
+		*_vcomment = comment;
+	return 0;
+
+__error:
+	free(file);
+	free(comment);
+	return err;
+}
+
+/*
  * Parse master section for "Use Case" and "File" tags.
  */
 static int parse_master_section(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg,
@@ -1816,8 +2162,9 @@ static int parse_master_section(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg,
 				void *data2 ATTRIBUTE_UNUSED)
 {
 	snd_config_iterator_t i, next;
-	snd_config_t *n;
+	snd_config_t *n, *variant = NULL;
 	char *use_case_name, *file = NULL, *comment = NULL;
+	bool variant_ok = false;
 	int err;
 
 	if (snd_config_get_type(cfg) != SND_CONFIG_TYPE_COMPOUND) {
@@ -1832,7 +2179,9 @@ static int parse_master_section(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg,
 	}
 
 	/* in-place evaluation */
+	uc_mgr->parse_master_section = 1;
 	err = uc_mgr_evaluate_inplace(uc_mgr, cfg);
+	uc_mgr->parse_master_section = 0;
 	if (err < 0)
 		goto __error;
 
@@ -1863,20 +2212,69 @@ static int parse_master_section(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg,
 			continue;
 		}
 
-		uc_error("unknown field %s in master section");
+		if (uc_mgr->conf_format >= 6 && strcmp(id, "Variant") == 0) {
+			snd_config_iterator_t i2, next2;
+			variant = n;
+			snd_config_for_each(i2, next2, n) {
+				const char *id2;
+				snd_config_t *n2;
+				n2 = snd_config_iterator_entry(i2);
+				if (snd_config_get_id(n2, &id2) < 0)
+					continue;
+				err = uc_mgr_evaluate_inplace(uc_mgr, n2);
+				if (err < 0)
+					goto __error;
+				if (strcmp(use_case_name, id2) == 0)
+					variant_ok = true;
+			}
+			continue;
+		}
+
+		uc_error("unknown field '%s' in SectionUseCase", id);
 	}
 
-	uc_dbg("use_case_name %s file '%s'", use_case_name, file);
-
-	/* do we have both use case name and file ? */
-	if (!file) {
-		uc_error("error: use case missing file");
+	if (variant && !variant_ok) {
+		uc_error("error: undefined variant '%s'", use_case_name);
 		err = -EINVAL;
 		goto __error;
 	}
 
-	/* parse verb file */
-	err = parse_verb_file(uc_mgr, use_case_name, comment, file);
+	if (!variant) {
+		uc_dbg("use_case_name %s file '%s'", use_case_name, file);
+
+		/* do we have both use case name and file ? */
+		if (!file) {
+			uc_error("error: use case missing file");
+			err = -EINVAL;
+			goto __error;
+		}
+
+		/* parse verb file */
+		err = parse_verb_file(uc_mgr, use_case_name, comment, file);
+	} else {
+		/* parse variants */
+		snd_config_for_each(i, next, variant) {
+			char *vfile, *vcomment;
+			const char *id;
+			n = snd_config_iterator_entry(i);
+			if (snd_config_get_id(n, &id) < 0)
+				continue;
+			if (!parse_is_name_safe(id)) {
+				err = -EINVAL;
+				goto __error;
+			}
+			err = parse_variant(uc_mgr, n, &vfile, &vcomment);
+			if (err < 0)
+				break;
+			uc_mgr->parse_variant = id;
+			err = parse_verb_file(uc_mgr, id,
+						vcomment ? vcomment : comment,
+						vfile ? vfile : file);
+			uc_mgr->parse_variant = NULL;
+			free(vfile);
+			free(vcomment);
+		}
+	}
 
 __error:
 	free(use_case_name);
@@ -1998,7 +2396,6 @@ static int parse_master_file(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg)
 	snd_config_iterator_t i, next;
 	snd_config_t *n;
 	const char *id;
-	long l;
 	int err;
 
 	if (snd_config_get_type(cfg) != SND_CONFIG_TYPE_COMPOUND) {
@@ -2007,23 +2404,9 @@ static int parse_master_file(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg)
 	}
 
 	if (uc_mgr->conf_format >= 2) {
-		err = snd_config_search(cfg, "Syntax", &n);
-		if (err < 0) {
-			uc_error("Syntax field not found in %s", uc_mgr->conf_file_name);
-			return -EINVAL;
-		}
-		err = snd_config_get_integer(n, &l);
-		if (err < 0) {
-			uc_error("Syntax field is invalid in %s", uc_mgr->conf_file_name);
+		err = parse_syntax_field(uc_mgr, cfg, uc_mgr->conf_file_name);
+		if (err < 0)
 			return err;
-		}
-		if (l < 2 || l > SYNTAX_VERSION_MAX) {
-			uc_error("Incompatible syntax %d in %s", l, uc_mgr->conf_file_name);
-			return -EINVAL;
-		}
-		/* delete this field to avoid strcmp() call in the loop */
-		snd_config_delete(n);
-		uc_mgr->conf_format = l;
 	}
 
 	/* in-place evaluation */
@@ -2104,6 +2487,10 @@ static int parse_master_file(snd_use_case_mgr_t *uc_mgr, snd_config_t *cfg)
 		/* error */
 		if (strcmp(id, "Error") == 0)
 			return error_node(uc_mgr, n);
+
+		/* skip further Syntax value updates (Include) */
+		if (strcmp(id, "Syntax") == 0)
+			continue;
 
 		uc_error("unknown master file field %s", id);
 	}
@@ -2186,6 +2573,7 @@ static int parse_toplevel_path(snd_use_case_mgr_t *uc_mgr,
 	snd_config_t *n, *n2;
 	const char *id;
 	char *dir = NULL, *file = NULL, fn[PATH_MAX];
+	struct stat64 st;
 	long version;
 	int err;
 
@@ -2260,23 +2648,51 @@ static int parse_toplevel_path(snd_use_case_mgr_t *uc_mgr,
 		}
 
 		ucm_filename(fn, sizeof(fn), version, dir, file);
-		if (access(fn, R_OK) == 0) {
-			if (replace_string(&uc_mgr->conf_dir_name, dir) == NULL) {
-				err = -ENOMEM;
-				goto __error;
+		if (access(fn, R_OK) == 0 && lstat64(fn, &st) == 0) {
+			if (S_ISLNK(st.st_mode)) {
+				ssize_t r;
+				char *link, *dir2, *p;
+
+				link = malloc(PATH_MAX);
+				if (link == NULL)
+					goto __enomem;
+				r = readlink(fn, link, PATH_MAX - 1);
+				if (r <= 0) {
+					free(link);
+					goto __next;
+				}
+				link[r] = '\0';
+				p = strrchr(link, '/');
+				if (p) {
+					*p = '\0';
+					dir2 = malloc(PATH_MAX);
+					if (dir2 == NULL) {
+						free(link);
+						goto __enomem;
+					}
+					strncpy(dir2, dir, PATH_MAX - 1);
+					strncat(dir2, "/", PATH_MAX - 1);
+					strncat(dir2, link, PATH_MAX - 1);
+					fn[PATH_MAX - 1] = '\0';
+					free(dir);
+					dir = dir2;
+				}
+				free(link);
 			}
-			if (replace_string(&uc_mgr->conf_file_name, file) == NULL) {
-				err = -ENOMEM;
-				goto __error;
-			}
+			if (replace_string(&uc_mgr->conf_dir_name, dir) == NULL)
+				goto __enomem;
+			if (replace_string(&uc_mgr->conf_file_name, file) == NULL)
+				goto __enomem;
 			strncpy(filename, fn, PATH_MAX);
+			filename[PATH_MAX - 1] = '\0';
 			uc_mgr->conf_format = version;
 			goto __ok;
 		}
 
 __next:
 		free(file);
-		free(dir);
+		if (dir != fn)
+			free(dir);
 		dir = NULL;
 		file = NULL;
 	}
@@ -2284,11 +2700,16 @@ __next:
 	err = -ENOENT;
 	goto __error;
 
+__enomem:
+	err = -ENOMEM;
+	goto __error;
+
 __ok:
 	err = 0;
 __error:
 	free(file);
-	free(dir);
+	if (dir != fn)
+		free(dir);
 	return err;
 }
 
@@ -2299,7 +2720,6 @@ static int parse_toplevel_config(snd_use_case_mgr_t *uc_mgr,
 	snd_config_iterator_t i, next;
 	snd_config_t *n;
 	const char *id;
-	long l;
 	int err;
 
 	if (snd_config_get_type(cfg) != SND_CONFIG_TYPE_COMPOUND) {
@@ -2307,23 +2727,9 @@ static int parse_toplevel_config(snd_use_case_mgr_t *uc_mgr,
 		return -EINVAL;
 	}
 
-	err = snd_config_search(cfg, "Syntax", &n);
-	if (err < 0) {
-		uc_error("Syntax field not found in %s", filename);
-		return -EINVAL;
-	}
-	err = snd_config_get_integer(n, &l);
-	if (err < 0) {
-		uc_error("Syntax field is invalid in %s", filename);
+	err = parse_syntax_field(uc_mgr, cfg, filename);
+	if (err < 0)
 		return err;
-	}
-	if (l < 2 || l > SYNTAX_VERSION_MAX) {
-		uc_error("Incompatible syntax %d in %s", l, filename);
-		return -EINVAL;
-	}
-	/* delete this field to avoid strcmp() call in the loop */
-	snd_config_delete(n);
-	uc_mgr->conf_format = l;
 
 	/* in-place evaluation */
 	err = uc_mgr_evaluate_inplace(uc_mgr, cfg);
@@ -2353,6 +2759,10 @@ static int parse_toplevel_config(snd_use_case_mgr_t *uc_mgr,
 			}
 			continue;
 		}
+
+		/* skip further Syntax value updates (Include) */
+		if (strcmp(id, "Syntax") == 0)
+			continue;
 
 		uc_error("unknown toplevel field %s", id);
 	}
@@ -2405,6 +2815,14 @@ int uc_mgr_import_master_config(snd_use_case_mgr_t *uc_mgr)
 	const char *name;
 	int err;
 
+	err = snd_config_top(&uc_mgr->local_config);
+	if (err < 0)
+		return err;
+
+	err = snd_config_top(&uc_mgr->macros);
+	if (err < 0)
+		return err;
+
 	name = uc_mgr->card_name;
 	if (strncmp(name, "hw:", 3) == 0) {
 		err = get_by_card(uc_mgr, name);
@@ -2423,6 +2841,10 @@ int uc_mgr_import_master_config(snd_use_case_mgr_t *uc_mgr)
 		goto __error;
 
 	err = parse_master_file(uc_mgr, cfg);
+	if (uc_mgr->macros) {
+		snd_config_delete(uc_mgr->macros);
+		uc_mgr->macros = NULL;
+	}
 	snd_config_delete(cfg);
 	if (err < 0) {
 		uc_mgr_free_ctl_list(uc_mgr);
@@ -2437,7 +2859,7 @@ __error:
 	return err;
 }
 
-static int filename_filter(const struct dirent *dirent)
+static int filename_filter(const struct dirent64 *dirent)
 {
 	if (dirent == NULL)
 		return 0;
@@ -2466,12 +2888,26 @@ int uc_mgr_scan_master_configs(const char **_list[])
 {
 	char filename[PATH_MAX], dfl[PATH_MAX], fn[FILENAME_MAX];
 	char *env = getenv(ALSA_CONFIG_UCM2_VAR);
+	snd_use_case_mgr_t *uc_mgr;
 	const char **list, *d_name;
+	char *s;
 	snd_config_t *cfg, *c;
-	int i, j, cnt, err;
+	int i, j, cnt, err, cards;
 	long l;
 	ssize_t ss;
-	struct dirent **namelist;
+	struct dirent64 **namelist;
+
+	i = -1;
+	cards = 0;
+	while (1) {
+		err = snd_card_next(&i);
+		if (err < 0)
+			return err;
+		if (i < 0)
+			break;
+		cards++;
+	}
+	cards += 4;	/* plug-and-play */
 
 	if (env)
 		snprintf(filename, sizeof(filename), "%s/conf.virt.d", env);
@@ -2479,12 +2915,12 @@ int uc_mgr_scan_master_configs(const char **_list[])
 		snprintf(filename, sizeof(filename), "%s/ucm2/conf.virt.d",
 			 snd_config_topdir());
 
-#if defined(_GNU_SOURCE) && !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(__sun) && !defined(ANDROID)
-#define SORTFUNC	versionsort
+#if defined(_GNU_SOURCE) && !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__DragonFly__) && !defined(__sun) && !defined(__ANDROID__)
+#define SORTFUNC	versionsort64
 #else
-#define SORTFUNC	alphasort
+#define SORTFUNC	alphasort64
 #endif
-	err = scandir(filename, &namelist, filename_filter, SORTFUNC);
+	err = scandir64(filename, &namelist, filename_filter, SORTFUNC);
 	if (err < 0) {
 		err = -errno;
 		uc_error("error: could not scan directory %s: %s",
@@ -2507,13 +2943,46 @@ int uc_mgr_scan_master_configs(const char **_list[])
 		}
 	}
 
-	list = calloc(1, cnt * 2 * sizeof(char *));
+	j = 0;
+	list = calloc(1, (cards + cnt) * 2 * sizeof(char *));
 	if (list == NULL) {
 		err = -ENOMEM;
 		goto __err;
 	}
 
-	for (i = j = 0; i < cnt; i++) {
+	i = -1;
+	while (j / 2 < cards) {
+		err = snd_card_next(&i);
+		if (err < 0)
+			goto __err;
+		if (i < 0)
+			break;
+		snprintf(fn, sizeof(fn), "-hw:%d", i);
+		err = snd_use_case_mgr_open(&uc_mgr, fn);
+		if (err == -ENOENT || err == -ENXIO)
+			continue;
+		if (err < 0) {
+			uc_error("Unable to open '%s': %s", fn, snd_strerror(err));
+			goto __err;
+		}
+		err = snd_use_case_get(uc_mgr, "comment", (const char **)&s);
+		if (err < 0) {
+			err = snd_card_get_longname(i, &s);
+			if (err < 0)
+				goto __err;
+		}
+		snd_use_case_mgr_close(uc_mgr);
+		list[j] = strdup(fn + 1);
+		if (list[j] == NULL) {
+			free(s);
+			err = -ENOMEM;
+			goto __err;
+		}
+		list[j + 1] = s;
+		j += 2;
+	}
+
+	for (i = 0; i < cnt; i++) {
 
 		d_name = namelist[i]->d_name;
 
@@ -2570,23 +3039,21 @@ int uc_mgr_scan_master_configs(const char **_list[])
 		}
 		j += 2;
 	}
-	err = j;
+	err = 0;
 
       __err:
-	for (i = 0; i < cnt; i++) {
+	for (i = 0; i < cnt; i++)
 		free(namelist[i]);
-		if (err < 0) {
+	free(namelist);
+	if (err < 0) {
+		for (i = 0; i < j; i++) {
 			free((void *)list[i * 2]);
 			free((void *)list[i * 2 + 1]);
 		}
-	}
-	free(namelist);
-
-	if (err >= 0) {
-		*_list = list;
-	} else {
 		free(list);
+		return err;
 	}
 
-	return err;
+	*_list = list;
+	return j;
 }

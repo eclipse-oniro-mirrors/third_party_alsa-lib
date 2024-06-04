@@ -32,11 +32,11 @@
  *   http://www.medianet.ag
  */
   
+#include "pcm_local.h"
+#include "pcm_plugin.h"
 #include <dirent.h>
 #include <locale.h>
 #include <math.h>
-#include "pcm_local.h"
-#include "pcm_plugin.h"
 
 #include "ladspa.h"
 
@@ -1147,7 +1147,7 @@ static int snd_pcm_ladspa_check_dir(snd_pcm_ladspa_plugin_t * const plugin,
 				    const unsigned long ladspa_id)
 {
 	DIR *dir;
-	struct dirent * dirent;
+	struct dirent64 * dirent;
 	int len = strlen(path), err;
 	int need_slash;
 	char *filename;
@@ -1161,7 +1161,7 @@ static int snd_pcm_ladspa_check_dir(snd_pcm_ladspa_plugin_t * const plugin,
 		return -ENOENT;
 		
 	while (1) {
-		dirent = readdir(dir);
+		dirent = readdir64(dir);
 		if (!dirent) {
 			closedir(dir);
 			return 0;
@@ -1210,7 +1210,7 @@ static int snd_pcm_ladspa_look_for_plugin(snd_pcm_ladspa_plugin_t * const plugin
 			return err;
 		err = snd_pcm_ladspa_check_dir(plugin, fullpath, label, ladspa_id);
 		free(fullpath);
-		if (err < 0)
+		if (err < 0 && err != -ENOENT)
 			return err;
 		if (err > 0)
 			return 0;

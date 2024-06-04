@@ -1,31 +1,11 @@
-/*
- *  ALSA lib header file include/config.h
- *  Copyright (c) 2022 Huawei Device Co., Ltd.
- *
- *   This library is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Lesser General Public License as
- *   published by the Free Software Foundation; either version 2.1 of
- *   the License, or (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU Lesser General Public License for more details.
- *
- *   You should have received a copy of the GNU Lesser General Public
- *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
- */
-
-#ifndef __ALSA_CONFIG_H
-#define __ALSA_CONFIG_H
+/* include/config.h.  Generated from config.h.in by configure.  */
+/* include/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Directory with aload* device files */
 #define ALOAD_DEVICE_DIRECTORY "/dev/"
 
 /* directory containing ALSA configuration database */
-#define ALSA_CONFIG_DIR "/system/etc/audio/alsa/share"
+#define ALSA_CONFIG_DIR "/usr/share/alsa"
 
 /* Enable assert at error message handler */
 /* #undef ALSA_DEBUG_ASSERT */
@@ -33,8 +13,11 @@
 /* Directory with ALSA device files */
 #define ALSA_DEVICE_DIRECTORY "/dev/snd/"
 
+/* directory containing pkgconfig files */
+#define ALSA_PKGCONF_DIR "/usr/lib/pkgconfig"
+
 /* directory containing ALSA add-on modules */
-#define ALSA_PLUGIN_DIR "/system/lib"
+#define ALSA_PLUGIN_DIR "/usr/lib/alsa-lib"
 
 /* Build hwdep component */
 #define BUILD_HWDEP "1"
@@ -50,6 +33,9 @@
 
 /* Build PCM alaw plugin */
 #define BUILD_PCM_PLUGIN_ALAW "1"
+
+/* Build PCM iec958 plugin */
+#define BUILD_PCM_PLUGIN_IEC958 "1"
 
 /* Build PCM lfloat plugin */
 #define BUILD_PCM_PLUGIN_LFLOAT "1"
@@ -78,6 +64,9 @@
 /* Build UCM component */
 #define BUILD_UCM "1"
 
+/* Define to 0 if __attribute__((symver)) is not supported */
+#define HAVE_ATTRIBUTE_SYMVER 0
+
 /* Have clock gettime */
 #define HAVE_CLOCK_GETTIME 1
 
@@ -93,6 +82,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
+/* Have LFS */
+#define HAVE_LFS 1
+
 /* Have libdl */
 #define HAVE_LIBDL 1
 
@@ -105,11 +97,14 @@
 /* Have librt */
 #define HAVE_LIBRT 1
 
+/* Define to 1 if you have the <malloc.h> header file. */
+#define HAVE_MALLOC_H 1
+
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
 /* MMX technology is enabled */
-/* #undef HAVE_MMX */
+#define HAVE_MMX "1"
 
 /* Define if your pthreads implementation have PTHREAD_MUTEX_RECURSIVE */
 #define HAVE_PTHREAD_MUTEX_RECURSIVE /**/
@@ -172,7 +167,7 @@
 #define PACKAGE_NAME "alsa-lib"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "alsa-lib 1.2.6"
+#define PACKAGE_STRING "alsa-lib 1.2.11"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "alsa-lib"
@@ -181,7 +176,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.2.6"
+#define PACKAGE_VERSION "1.2.11"
 
 /* Max number of cards */
 #define SND_MAX_CARDS 32
@@ -204,11 +199,44 @@
 /* directory to put tmp socket files */
 #define TMPDIR "/tmp"
 
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# define _ALL_SOURCE 1
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE 1
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# define _POSIX_PTHREAD_SEMANTICS 1
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# define _TANDEM_SOURCE 1
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# define __EXTENSIONS__ 1
+#endif
+
+
 /* sound library version string */
-#define VERSION "1.2.6"
+#define VERSION "1.2.11"
 
 /* compiled with versioned symbols */
-#define VERSIONED_SYMBOLS
+#define VERSIONED_SYMBOLS /**/
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+/* #undef _FILE_OFFSET_BITS */
+
+/* Define for large files, on AIX-style hosts. */
+/* #undef _LARGE_FILES */
 
 /* Define to 1 if on MINIX. */
 /* #undef _MINIX */
@@ -231,5 +259,3 @@
 #ifndef __cplusplus
 /* #undef inline */
 #endif
-
-#endif /* __ALSA_CONFIG_H */

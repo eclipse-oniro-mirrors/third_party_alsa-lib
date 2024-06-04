@@ -17,28 +17,8 @@
            Liam Girdwood <liam.r.girdwood@linux.intel.com>
 */
 
-#include <sys/stat.h>
-#include "list.h"
 #include "tplg_local.h"
-
-/*
- * Safe strtol call
- */
-int safe_strtol_base(const char *str, long *val, int base)
-{
-	char *end;
-	long v;
-	if (!*str)
-		return -EINVAL;
-	errno = 0;
-	v = strtol(str, &end, base);
-	if (errno)
-		return -errno;
-	if (*end)
-		return -EINVAL;
-	*val = v;
-	return 0;
-}
+#include <sys/stat.h>
 
 /*
  * Get integer value

@@ -40,7 +40,7 @@
 #include <pthread.h>
 #include "use-case.h"
 
-#define SYNTAX_VERSION_MAX	5
+#define SYNTAX_VERSION_MAX	6
 
 #define MAX_CARD_SHORT_NAME	32
 #define MAX_CARD_LONG_NAME	80
@@ -57,6 +57,9 @@
 #define SEQUENCE_ELEMENT_TYPE_CMPT_SEQ		10
 #define SEQUENCE_ELEMENT_TYPE_SYSSET		11
 #define SEQUENCE_ELEMENT_TYPE_CFGSAVE		12
+#define SEQUENCE_ELEMENT_TYPE_DEV_ENABLE_SEQ	13
+#define SEQUENCE_ELEMENT_TYPE_DEV_DISABLE_SEQ	14
+#define SEQUENCE_ELEMENT_TYPE_DEV_DISABLE_ALL	15
 
 struct ucm_value {
         struct list_head list;
@@ -80,6 +83,7 @@ struct sequence_element {
 		char *exec;
 		char *sysw;
 		char *cfgsave;
+		char *device;
 		struct component_sequence cmpt_seq; /* component sequence */
 	} data;
 };
@@ -228,6 +232,9 @@ struct snd_use_case_mgr {
 	int conf_format;
 	unsigned int ucm_card_number;
 	int suppress_nodev_errors;
+	const char *parse_variant;
+	int parse_master_section;
+	int sequence_hops;
 
 	/* UCM cards list */
 	struct list_head cards_list;
@@ -261,6 +268,10 @@ struct snd_use_case_mgr {
 
 	/* list of opened control devices */
 	struct list_head ctl_list;
+
+	/* tree with macros */
+	snd_config_t *macros;
+	int macro_hops;
 
 	/* local library configuration */
 	snd_config_t *local_config;
@@ -333,6 +344,8 @@ const char *uc_mgr_get_variable(snd_use_case_mgr_t *uc_mgr,
 int uc_mgr_set_variable(snd_use_case_mgr_t *uc_mgr,
 			const char *name,
 			const char *val);
+
+int uc_mgr_delete_variable(snd_use_case_mgr_t *uc_mgr, const char *name);
 
 int uc_mgr_get_substituted_value(snd_use_case_mgr_t *uc_mgr,
 				 char **_rvalue,

@@ -27,13 +27,12 @@
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-#include <inttypes.h>
-#include "bswap.h"
 #include "pcm_local.h"
 #include "pcm_plugin.h"
 #include "pcm_rate.h"
-
 #include "plugin_ops.h"
+#include "bswap.h"
+#include <inttypes.h>
 
 #if 0
 #define DEBUG_REFINE
@@ -770,7 +769,7 @@ static snd_pcm_sframes_t snd_pcm_rate_forward(snd_pcm_t *pcm ATTRIBUTE_UNUSED,
 
 static int snd_pcm_rate_commit_area(snd_pcm_t *pcm, snd_pcm_rate_t *rate,
 				    snd_pcm_uframes_t appl_offset,
-				    snd_pcm_uframes_t size,
+				    snd_pcm_uframes_t size ATTRIBUTE_UNUSED,
 				    snd_pcm_uframes_t slave_size)
 {
 	snd_pcm_uframes_t cont = pcm->buffer_size - appl_offset;
@@ -781,16 +780,25 @@ static int snd_pcm_rate_commit_area(snd_pcm_t *pcm, snd_pcm_rate_t *rate,
 	snd_pcm_sframes_t result;
 
 	areas = snd_pcm_mmap_areas(pcm);
-	if (cont >= size) {
+	/*
+	 * Because snd_pcm_rate_write_areas1() below will convert a full source period
+	 * then there had better be a full period available in the current buffer.
+	 */
+	if (cont >= pcm->period_size) {
 		result = snd_pcm_mmap_begin(rate->gen.slave, &slave_areas, &slave_offset, &slave_frames);
 		if (result < 0)
 			return result;
-		if (slave_frames < slave_size) {
+		/*
+		 * Because snd_pcm_rate_write_areas1() below will convert to a full slave period
+		 * then there had better be a full slave period available in the slave buffer.
+		 */
+		if (slave_frames < rate->gen.slave->period_size) {
 			snd_pcm_rate_write_areas1(pcm, areas, appl_offset, rate->sareas, 0);
 			goto __partial;
 		}
 		snd_pcm_rate_write_areas1(pcm, areas, appl_offset,
 					  slave_areas, slave_offset);
+		/* Only commit the requested slave_size, even if more was actually converted */
 		result = snd_pcm_mmap_commit(rate->gen.slave, slave_offset, slave_size);
 		if (result < (snd_pcm_sframes_t)slave_size) {
 			if (result < 0)
@@ -807,7 +815,7 @@ static int snd_pcm_rate_commit_area(snd_pcm_t *pcm, snd_pcm_rate_t *rate,
 				   pcm->format);
 		snd_pcm_areas_copy(rate->pareas, cont,
 				   areas, 0,
-				   pcm->channels, size - cont,
+				   pcm->channels, pcm->period_size - cont,
 				   pcm->format);
 
 		snd_pcm_rate_write_areas1(pcm, rate->pareas, 0, rate->sareas, 0);
@@ -1009,7 +1017,7 @@ static int snd_pcm_rate_sync_playback_area(snd_pcm_t *pcm, snd_pcm_uframes_t app
 		slave_size -= rate->gen.slave->period_size;
 		rate->last_commit_ptr += pcm->period_size;
 		if (rate->last_commit_ptr >= pcm->boundary)
-			rate->last_commit_ptr = 0;
+			rate->last_commit_ptr -= pcm->boundary;
 	}
 	return 0;
 }
@@ -1137,7 +1145,7 @@ static int snd_pcm_rate_drain(snd_pcm_t *pcm)
 			snd_pcm_uframes_t psize, spsize;
 			int err;
 
-			err = __snd_pcm_wait_in_lock(rate->gen.slave, -1);
+			err = __snd_pcm_wait_in_lock(rate->gen.slave, SND_PCM_WAIT_DRAIN);
 			if (err < 0)
 				break;
 			if (size > pcm->period_size) {
@@ -1154,7 +1162,7 @@ static int snd_pcm_rate_drain(snd_pcm_t *pcm)
 			if (commit_err == 1) {
 				rate->last_commit_ptr += psize;
 				if (rate->last_commit_ptr >= pcm->boundary)
-					rate->last_commit_ptr = 0;
+					rate->last_commit_ptr -= pcm->boundary;
 			} else if (commit_err == 0) {
 				if (pcm->mode & SND_PCM_NONBLOCK) {
 					commit_err = -EAGAIN;
@@ -1273,6 +1281,32 @@ static int snd_pcm_rate_close(snd_pcm_t *pcm)
 	return snd_pcm_generic_close(pcm);
 }
 
+/**
+ * \brief Convert rate pcm frames to corresponding rate slave pcm frames
+ * \param pcm PCM handle
+ * \param frames Frames to be converted to slave frames
+ * \retval Corresponding slave frames
+*/
+static snd_pcm_uframes_t snd_pcm_rate_slave_frames(snd_pcm_t *pcm, snd_pcm_uframes_t frames)
+{
+	snd_pcm_uframes_t sframes;
+	snd_pcm_rate_t *rate = pcm->private_data;
+
+	if (pcm->stream == SND_PCM_STREAM_PLAYBACK)
+		sframes = rate->ops.output_frames(rate->obj, frames);
+	else
+		sframes = rate->ops.input_frames(rate->obj, frames);
+
+	return sframes;
+}
+
+static int snd_pcm_rate_may_wait_for_avail_min(snd_pcm_t *pcm,
+					       snd_pcm_uframes_t avail)
+{
+	return snd_pcm_plugin_may_wait_for_avail_min_conv(pcm, avail,
+							  snd_pcm_rate_slave_frames);
+}
+
 static const snd_pcm_fast_ops_t snd_pcm_rate_fast_ops = {
 	.status = snd_pcm_rate_status,
 	.state = snd_pcm_rate_state,
@@ -1299,7 +1333,7 @@ static const snd_pcm_fast_ops_t snd_pcm_rate_fast_ops = {
 	.poll_descriptors_count = snd_pcm_generic_poll_descriptors_count,
 	.poll_descriptors = snd_pcm_generic_poll_descriptors,
 	.poll_revents = snd_pcm_rate_poll_revents,
-	.may_wait_for_avail_min = snd_pcm_plugin_may_wait_for_avail_min,
+	.may_wait_for_avail_min = snd_pcm_rate_may_wait_for_avail_min,
 };
 
 static const snd_pcm_ops_t snd_pcm_rate_ops = {

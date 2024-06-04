@@ -26,6 +26,7 @@
  *
  */
   
+#include "pcm_local.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -134,24 +135,14 @@ static int snd_pcm_dsnoop_sync_ptr(snd_pcm_t *pcm)
 	snd_pcm_sframes_t diff;
 	int err;
 
-	switch (snd_pcm_state(dsnoop->spcm)) {
-	case SND_PCM_STATE_DISCONNECTED:
-		dsnoop->state = SNDRV_PCM_STATE_DISCONNECTED;
-		return -ENODEV;
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dsnoop)) < 0)
-			return err;
-		break;
-	default:
-		break;
-	}
-	if (snd_pcm_direct_client_chk_xrun(dsnoop, pcm))
-		return -EPIPE;
 	if (dsnoop->slowptr)
 		snd_pcm_hwsync(dsnoop->spcm);
 	old_slave_hw_ptr = dsnoop->slave_hw_ptr;
 	snoop_timestamp(pcm);
 	slave_hw_ptr = dsnoop->slave_hw_ptr;
+	err = snd_pcm_direct_check_xrun(dsnoop, pcm);
+	if (err < 0)
+		return err;
 	diff = pcm_frame_diff(slave_hw_ptr, old_slave_hw_ptr, dsnoop->slave_boundary);
 	if (diff == 0)		/* fast path */
 		return 0;
@@ -206,22 +197,8 @@ static int snd_pcm_dsnoop_status(snd_pcm_t *pcm, snd_pcm_status_t * status)
 static snd_pcm_state_t snd_pcm_dsnoop_state(snd_pcm_t *pcm)
 {
 	snd_pcm_direct_t *dsnoop = pcm->private_data;
-	int err;
-	snd_pcm_state_t state;
-	state = snd_pcm_state(dsnoop->spcm);
-	switch (state) {
-	case SND_PCM_STATE_SUSPENDED:
-	case SND_PCM_STATE_DISCONNECTED:
-		dsnoop->state = state;
-		return state;
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dsnoop)) < 0)
-			return err;
-		break;
-	default:
-		break;
-	}
-	snd_pcm_direct_client_chk_xrun(dsnoop, pcm);
+
+	snd_pcm_direct_check_xrun(dsnoop, pcm);
 	return dsnoop->state;
 }
 
@@ -239,7 +216,7 @@ static int snd_pcm_dsnoop_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delayp)
 		/* Fall through */
 	case SNDRV_PCM_STATE_PREPARED:
 	case SNDRV_PCM_STATE_SUSPENDED:
-		*delayp = snd_pcm_mmap_capture_avail(pcm);
+		*delayp = snd_pcm_mmap_capture_delay(pcm);
 		return 0;
 	case SNDRV_PCM_STATE_XRUN:
 		return -EPIPE;
@@ -275,8 +252,7 @@ static int snd_pcm_dsnoop_reset(snd_pcm_t *pcm)
 	snd_pcm_direct_t *dsnoop = pcm->private_data;
 	dsnoop->hw_ptr %= pcm->period_size;
 	dsnoop->appl_ptr = dsnoop->hw_ptr;
-	dsnoop->slave_appl_ptr = dsnoop->slave_hw_ptr;
-	snd_pcm_direct_reset_slave_ptr(pcm, dsnoop);
+	snd_pcm_direct_reset_slave_ptr(pcm, dsnoop, dsnoop->slave_hw_ptr);
 	return 0;
 }
 
@@ -289,8 +265,7 @@ static int snd_pcm_dsnoop_start(snd_pcm_t *pcm)
 		return -EBADFD;
 	snd_pcm_hwsync(dsnoop->spcm);
 	snoop_timestamp(pcm);
-	dsnoop->slave_appl_ptr = dsnoop->slave_hw_ptr;
-	snd_pcm_direct_reset_slave_ptr(pcm, dsnoop);
+	snd_pcm_direct_reset_slave_ptr(pcm, dsnoop, dsnoop->slave_hw_ptr);
 	err = snd_timer_start(dsnoop->timer);
 	if (err < 0)
 		return err;
@@ -327,7 +302,7 @@ static int __snd_pcm_dsnoop_drain(snd_pcm_t *pcm)
 			break;
 		if (pcm->mode & SND_PCM_NONBLOCK)
 			return -EAGAIN;
-		__snd_pcm_wait_in_lock(pcm, -1);
+		__snd_pcm_wait_in_lock(pcm, SND_PCM_WAIT_DRAIN);
 	}
 	pcm->stop_threshold = stop_threshold;
 	return snd_pcm_dsnoop_drop(pcm);
@@ -420,18 +395,9 @@ static snd_pcm_sframes_t snd_pcm_dsnoop_mmap_commit(snd_pcm_t *pcm,
 	snd_pcm_direct_t *dsnoop = pcm->private_data;
 	int err;
 
-	switch (snd_pcm_state(dsnoop->spcm)) {
-	case SND_PCM_STATE_XRUN:
-		if ((err = snd_pcm_direct_slave_recover(dsnoop)) < 0)
-			return err;
-		break;
-	case SND_PCM_STATE_SUSPENDED:
-		return -ESTRPIPE;
-	default:
-		break;
-	}
-	if (snd_pcm_direct_client_chk_xrun(dsnoop, pcm))
-		return -EPIPE;
+	err = snd_pcm_direct_check_xrun(dsnoop, pcm);
+	if (err < 0)
+		return err;
 	if (dsnoop->state == SND_PCM_STATE_RUNNING) {
 		err = snd_pcm_dsnoop_sync_ptr(pcm);
 		if (err < 0)
@@ -733,7 +699,7 @@ pcm.name {
 	ipc_perm INT		# IPC permissions (octal, default 0600)
 	hw_ptr_alignment STR	# Slave application and hw pointer alignment type
 		# STR can be one of the below strings :
-		# no
+		# no (or off)
 		# roundup
 		# rounddown
 		# auto (default)

@@ -26,6 +26,7 @@
  *
  */
   
+#include "pcm_local.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -61,7 +62,7 @@ static long snd_pcm_shm_action_fd0(snd_pcm_t *pcm, int *fd)
 {
 	snd_pcm_shm_t *shm = pcm->private_data;
 	int err;
-	char buf[1];
+	char buf[1] = "";
 	volatile snd_pcm_shm_ctrl_t *ctrl = shm->ctrl;
 
 	err = write(shm->socket, buf, 1);
@@ -113,7 +114,7 @@ static long snd_pcm_shm_action(snd_pcm_t *pcm)
 {
 	snd_pcm_shm_t *shm = pcm->private_data;
 	int err, result;
-	char buf[1];
+	char buf[1] = "";
 	volatile snd_pcm_shm_ctrl_t *ctrl = shm->ctrl;
 
 	if (ctrl->hw.changed || ctrl->appl.changed)
@@ -148,7 +149,7 @@ static long snd_pcm_shm_action_fd(snd_pcm_t *pcm, int *fd)
 {
 	snd_pcm_shm_t *shm = pcm->private_data;
 	int err;
-	char buf[1];
+	char buf[1] = "";
 	volatile snd_pcm_shm_ctrl_t *ctrl = shm->ctrl;
 
 	if (ctrl->hw.changed || ctrl->appl.changed)
@@ -495,7 +496,7 @@ static int snd_pcm_shm_drain(snd_pcm_t *pcm)
 	if (err < 0)
 		return err;
 	if (!(pcm->mode & SND_PCM_NONBLOCK))
-		snd_pcm_wait(pcm, -1);
+		snd_pcm_wait(pcm, SND_PCM_WAIT_DRAIN);
 	return err;
 }
 

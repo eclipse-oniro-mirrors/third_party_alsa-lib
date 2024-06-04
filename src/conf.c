@@ -527,7 +527,7 @@ static inline void snd_config_unlock(void) { }
 #endif
 
 /*
- * Add a diretory to the paths to search included files.
+ * Add a directory to the paths to search included files.
  * param fd -  File object that owns these paths to search files included by it.
  * param dir - Path of the directory to add. Allocated externally and need to
 *              be freed manually later.
@@ -584,6 +584,8 @@ static void free_include_paths(struct filedesc *fd)
 	}
 }
 
+#endif /* DOC_HIDDEN */
+
 /**
  * \brief Returns the default top-level config directory
  * \return The top-level config directory path string
@@ -604,6 +606,8 @@ const char *snd_config_topdir(void)
 	}
 	return topdir;
 }
+
+#ifndef DOC_HIDDEN
 
 static char *_snd_config_path(const char *name)
 {
@@ -663,7 +667,7 @@ static int input_stdio_open(snd_input_t **inputp, const char *file,
 	return err;
 }
 
-int safe_strtoll_base(const char *str, long long *val, int base)
+int _snd_safe_strtoll_base(const char *str, long long *val, int base)
 {
 	char *end;
 	long v;
@@ -679,7 +683,7 @@ int safe_strtoll_base(const char *str, long long *val, int base)
 	return 0;
 }
 
-int safe_strtol_base(const char *str, long *val, int base)
+int _snd_safe_strtol_base(const char *str, long *val, int base)
 {
 	char *end;
 	long v;
@@ -695,7 +699,7 @@ int safe_strtol_base(const char *str, long *val, int base)
 	return 0;
 }
 
-static int safe_strtod(const char *str, double *val)
+int _snd_safe_strtod(const char *str, double *val)
 {
 	char *end;
 	double v;
@@ -814,11 +818,12 @@ static int get_char_skip_comments(input_t *input)
 				closedir(dirp);
 
 				err = add_include_path(input->current, str);
-				free(str);
 				if (err < 0) {
 					SNDERR("Cannot add search dir %s", str);
+					free(str);
 					return err;
 				}
+				free(str);
 				continue;
 			}
 
@@ -1699,7 +1704,7 @@ static int _snd_config_save_children(snd_config_t *config, snd_output_t *out,
 	}
 	return 0;
 }
-#endif
+#endif /* DOC_HIDDEN */
 
 
 /**
@@ -1741,6 +1746,8 @@ int snd_config_substitute(snd_config_t *dst, snd_config_t *src)
 		src->u.compound.fields.prev->next = &dst->u.compound.fields;
 	}
 	free(dst->id);
+	if (dst->type == SND_CONFIG_TYPE_STRING)
+		free(dst->u.string);
 	dst->id = src->id;
 	dst->type = src->type;
 	dst->u = src->u;
@@ -2052,7 +2059,7 @@ int snd_config_load(snd_config_t *config, snd_input_t *in)
 
 /**
  * \brief Loads a configuration tree from a string.
- * \param[out] The function puts the handle to the configuration
+ * \param[out] config The function puts the handle to the configuration
  *	       node loaded from the file(s) at the address specified
  *             by \a config.
  * \param[in] s String with the ASCII configuration
@@ -2257,9 +2264,9 @@ static int _snd_config_array_merge(snd_config_t *dst, snd_config_t *src, int ind
 
 /**
  * \brief In-place merge of two config handles
- * \param dst[out] Config handle for the merged contents
- * \param src[in] Config handle to merge into dst (may be NULL)
- * \param override[in] Override flag
+ * \param[out] dst Config handle for the merged contents
+ * \param[in] src Config handle to merge into dst (may be NULL)
+ * \param[in] override Override flag
  * \return Zero if successful, otherwise a negative error code.
  *
  * This function merges all fields from the source compound to the destination compound.
@@ -2276,7 +2283,7 @@ static int _snd_config_array_merge(snd_config_t *dst, snd_config_t *src, int ind
  *
  * \par Errors:
  * <dl>
- * <dt>-EEXIST<dd>identifier already exists (!overwrite)
+ * <dt>-EEXIST<dd>identifier already exists (!override)
  * <dt>-ENOMEM<dd>not enough memory
  * </dl>
  */
@@ -2870,6 +2877,26 @@ int snd_config_imake_string(snd_config_t **config, const char *id, const char *v
 	return 0;
 }
 
+/**
+ * \brief Creates a string configuration node with the given initial value.
+ * \param[out] config The function puts the handle to the new node at
+ *                    the address specified by \a config.
+ * \param[in] id The id of the new node.
+ * \param[in] value The initial value of the new node.  May be \c NULL.
+ * \return Zero if successful, otherwise a negative error code.
+ *
+ * This function creates a new node of type #SND_CONFIG_TYPE_STRING. The node
+ * contains with a copy of the string \c value, replacing any character other
+ * than alphanumeric, space, or '-' with the character '_'.
+ *
+ * \par Errors:
+ * <dl>
+ * <dt>-ENOMEM<dd>Out of memory.
+ * </dl>
+ *
+ * \par Conforming to:
+ * LSB 3.2
+ */
 int snd_config_imake_safe_string(snd_config_t **config, const char *id, const char *value)
 {
 	int err;
@@ -3891,7 +3918,6 @@ int snd_config_search_alias_hooks(snd_config_t *config,
 #define ALSA_CONFIG_PATH_VAR "ALSA_CONFIG_PATH"
 
 /**
- * \ingroup Config
  * \brief Configuration top-level node (the global configuration).
  *
  * This variable contains a handle to the top-level configuration node,
@@ -3919,7 +3945,7 @@ snd_config_t *snd_config = NULL;
 struct finfo {
 	char *name;
 	dev_t dev;
-	ino_t ino;
+	ino64_t ino;
 	time_t mtime;
 };
 
@@ -4062,7 +4088,7 @@ static int snd_config_hooks(snd_config_t *config, snd_config_t *private_data)
 	return err;
 }
 
-static int config_filename_filter(const struct dirent *dirent)
+static int config_filename_filter(const struct dirent64 *dirent)
 {
 	size_t flen;
 
@@ -4100,26 +4126,26 @@ static int config_file_open(snd_config_t *root, const char *filename)
 
 static int config_file_load(snd_config_t *root, const char *fn, int errors)
 {
-	struct stat st;
-	struct dirent **namelist;
+	struct stat64 st;
+	struct dirent64 **namelist;
 	int err, n;
 
 	if (!errors && access(fn, R_OK) < 0)
 		return 1;
-	if (stat(fn, &st) < 0) {
+	if (stat64(fn, &st) < 0) {
 		SNDERR("cannot stat file/directory %s", fn);
 		return 1;
 	}
 	if (!S_ISDIR(st.st_mode))
 		return config_file_open(root, fn);
 #ifndef DOC_HIDDEN
-#if defined(_GNU_SOURCE) && !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(__sun) && !defined(ANDROID)
-#define SORTFUNC	versionsort
+#if defined(_GNU_SOURCE) && !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__DragonFly__) && !defined(__sun) && !defined(__ANDROID__)
+#define SORTFUNC	versionsort64
 #else
-#define SORTFUNC	alphasort
+#define SORTFUNC	alphasort64
 #endif
 #endif
-	n = scandir(fn, &namelist, config_filename_filter, SORTFUNC);
+	n = scandir64(fn, &namelist, config_filename_filter, SORTFUNC);
 	if (n > 0) {
 		int j;
 		err = 0;
@@ -4292,7 +4318,7 @@ SND_DLSYM_BUILD_VERSION(snd_config_hook_load, SND_CONFIG_DLSYM_VERSION_HOOK);
 int snd_determine_driver(int card, char **driver);
 #endif
 
-snd_config_t *_snd_config_hook_private_data(int card, const char *driver)
+static snd_config_t *_snd_config_hook_private_data(int card, const char *driver)
 {
 	snd_config_t *private_data, *v;
 	int err;
@@ -4543,9 +4569,9 @@ int snd_config_update_r(snd_config_t **_top, snd_config_update_t **_update, cons
 		c++;
 	}
 	for (k = 0; k < local->count; ++k) {
-		struct stat st;
+		struct stat64 st;
 		struct finfo *lf = &local->finfo[k];
-		if (stat(lf->name, &st) >= 0) {
+		if (stat64(lf->name, &st) >= 0) {
 			lf->dev = st.st_dev;
 			lf->ino = st.st_ino;
 			lf->mtime = st.st_mtime;
@@ -4994,8 +5020,10 @@ int snd_config_copy(snd_config_t **dst,
 static int _snd_config_expand_vars(snd_config_t **dst, const char *s, void *private_data)
 {
 	snd_config_t *val, *vars = private_data;
-	if (snd_config_search(vars, s, &val) < 0)
-		return snd_config_make_string(dst, "");
+	if (snd_config_search(vars, s, &val) < 0) {
+		*dst = NULL;
+		return 0;
+	}
 	return snd_config_copy(dst, val);
 }
 
@@ -5060,6 +5088,8 @@ static int _snd_config_expand(snd_config_t *src,
 				err = snd_config_evaluate_string(dst, s, fcn, vars);
 				if (err < 0)
 					return err;
+				if (*dst == NULL)
+					return 0;
 				err = snd_config_set_id(*dst, id);
 				if (err < 0) {
 					snd_config_delete(*dst);
@@ -5803,6 +5833,7 @@ static void _snd_config_end(void)
 }
 #endif
 
+#ifndef DOC_HIDDEN
 size_t page_size(void)
 {
 	long s = sysconf(_SC_PAGE_SIZE);
@@ -5838,3 +5869,4 @@ size_t page_ptr(size_t object_offset, size_t object_size, size_t *offset, size_t
 	*offset = object_offset;
 	return r;
 }
+#endif /* DOC_HIDDEN */

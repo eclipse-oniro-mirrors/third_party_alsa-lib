@@ -63,6 +63,8 @@ use case verbs for that sound card. i.e.:
 # Example master file for blah sound card
 # By Joe Blogs <joe@bloggs.org>
 
+Syntax 6
+
 # Use Case name for user interface
 Comment "Nice Abstracted Soundcard"
 
@@ -91,7 +93,11 @@ ValueDefaults {
 # ALSA card controls which may be modified by user after initial settings.
 
 BootSequence [
-  cset "name='My control' on"
+  cset "name='Master Playback Switch',index=2 0,0"
+  cset "name='Master Playback Volume',index=2 25,25"
+  msleep 50
+  cset "name='Master Playback Switch',index=2 1,1"
+  cset "name='Master Playback Volume',index=2 50,50"
 ]
 
 # Define fixed boot sequence
@@ -117,23 +123,16 @@ SectionVerb {
 
   # enable and disable sequences are compulsory
   EnableSequence [
-    cset "name='Master Playback Switch',index=2 0,0"
-    cset "name='Master Playback Volume',index=2 25,25"
-    msleep 50
-    cset "name='Master Playback Switch',index=2 1,1"
-    cset "name='Master Playback Volume',index=2 50,50"
+    disdevall ""	# run DisableSequence for all devices
   ]
 
   DisableSequence [
-    cset "name='Master Playback Switch',index=2 0,0"
-    cset "name='Master Playback Volume',index=2 25,25"
-    msleep 50
-    cset "name='Master Playback Switch',index=2 1,1"
-    cset "name='Master Playback Volume',index=2 50,50"
+    cset "name='Power Save' on"
   ]
 
   # Optional transition verb
   TransitionSequence."ToCaseName" [
+    disdevall ""	# run DisableSequence for all devices
     msleep 1
   ]
 
@@ -212,16 +211,25 @@ SectionModifier."Capture Voice" {
   Value {
     TQ Voice
     CapturePCM "hw:${CardId},11"
+    PlaybackMixerElem "Master"
     PlaybackVolume "name='Master Playback Volume',index=2"
     PlaybackSwitch "name='Master Playback Switch',index=2"
   }
 }
 ~~~
 
+### Sequence graphs
+
+\image html ucm-seq-verb.svg
+\image html ucm-seq-device.svg
+
 ### Sequence commands
 
 Command name   | Description
 ---------------|----------------------------------------------
+enadev2 ARG    | execute device enable sequence
+disdev2 ARG    | execute device disable sequence
+disdevall ""   | execute device disable sequence for all devices in verb
 cdev ARG       | ALSA control device name for snd_ctl_open()
 cset ARG       | ALSA control set - snd_ctl_ascii_elem_id_parse() + snd_ctl_ascii_value_parse()
 cset-new ARG   | Create new ALSA user control element - snd_ctl_ascii_elem_id_parse() + description
@@ -275,12 +283,25 @@ configuration like volumes or switches. The alsactl ensures the persistency (sto
 the state of the controls to the /var tree and loads the previous state in the next
 boot).
 
+\image html ucm-seq-boot.svg
+
 ### Device volume
 
 It is expected that the applications handle the volume settings. It is not recommended
-to set the fixed values for the volume settings to the Enable / Disable sequences for
+to set the fixed values for the volume settings in the Enable / Disable sequences for
 verbs or devices, if the device exports the hardware volume (MixerElem or Volume/Switch
-values). The default volume settings should be set in the *BootSequence*.
+values). The default volume settings should be set in the *BootSequence*. The purpose
+for this scheme is to allow users to override defaults using the alsactl sound card
+state management.
+
+Checklist:
+
+1. Set default volume in BootSequence
+2. Verb's EnableSequence should ensure that all devices are turned off (mixer paths)
+   to avoid simultaneous device use - the previous state is unknown (see *disdevall*
+   and *disdev2* commands or create a new custom command sequence)
+
+\image html ucm-volume.svg
 
 ### Dynamic configuration tree
 
@@ -376,12 +397,18 @@ ${CardDriver}        | ALSA card driver (see snd_ctl_card_info_get_driver())
 ${CardName}          | ALSA card name (see snd_ctl_card_info_get_name())
 ${CardLongName}      | ALSA card long name (see snd_ctl_card_info_get_longname())
 ${CardComponents}    | ALSA card components (see snd_ctl_card_info_get_components())
-${env:<str>}         | Environment variable <str>
-${sys:<str>}         | Contents of sysfs file <str>
-${var:<str>}         | UCM parser variable (set using a _Define_ block)
-${eval:<str>}        | Evaluate expression like *($var+2)/3* [**Syntax 5**]
-${find-card:<str>}   | Find a card - see _Find card substitution_ section
-${find-device:<str>} | Find a device - see _Find device substitution_ section
+${env:\<str\>}         | Environment variable \<str\>
+${sys:\<str\>}         | Contents of sysfs file \<str\>
+${var:\<str\>}         | UCM parser variable (set using a _Define_ block)
+${eval:\<str\>}        | Evaluate expression like *($var+2)/3* [**Syntax 5**]
+${find-card:\<str\>}   | Find a card - see _Find card substitution_ section
+${find-device:\<str\>} | Find a device - see _Find device substitution_ section
+
+#### Special whole string substitution
+
+Substituted string   | Value
+---------------------|---------------------
+${evali:\<str\>}       | Evaluate expression like *($var+2)/3* [**Syntax 6**]; target node will be integer; substituted only in the LibraryConfig subtree
 
 #### Find card substitution
 
@@ -445,6 +472,41 @@ The result will be stored to variables *rval1* as *hello* and *rval2* as *regex*
 substrings are stored to a separate variable with the sequence number postfix.
 
 Variables can be substituted using the `${var:rval1}` reference for example.
+
+### Macros
+
+Macros were added for *Syntax* version *6*. The *DefineMacro* defines new
+macro like:
+
+~~~{.html}
+DefineMacro.macro1 {
+  Define.a "${var:__arg1}"
+  Define.b "${var:__other}"
+  # Device or any other block may be defined here...
+}
+~~~
+
+The arguments in the macro are refered as the variables with the double
+underscore name prefix (like *__variable*). The configuration block in
+the DefineMacro subtree is always evaluated (including arguments and variables)
+at the time of the instantiation.
+
+The macros can be instantiated (expanded) using:
+
+~~~{.html}
+# short version
+Macro.id1.macro1 "arg1='something 1',other='other x'"
+
+# long version
+Macro.id1.macro1 {
+  arg1 'something 1'
+  other 'other x'
+}
+~~~
+
+The second identifier (in example as *id1*) must be unique, but the contents
+is ignored. It just differentiate the items in the subtree (allowing multiple
+instances for one macro).
 
 ### Conditions
 
@@ -523,6 +585,41 @@ If.fmic {
 }
 ~~~
 
+### Variants
+
+To avoid duplication of the many configuration files for the cases with
+minimal configuration changes, there is the variant extension. Variants were
+added for *Syntax* version *6*.
+
+The bellow example will create two verbs - "HiFi" and "HiFi 7.1" with
+the different playback channels (2 and 8) for the "Speaker" device.
+
+Example (main configuration file):
+
+~~~{.html}
+SectionUseCase."HiFi" {
+  File "HiFi.conf"
+  Variant."HiFi" {
+    Comment "HiFi"
+  }
+  Variant."HiFi 7+1" {
+    Comment "HiFi 7.1"
+  }
+}
+~~~
+
+Example (verb configuration file - HiFi.conf):
+
+~~~{.html}
+SectionDevice."Speaker" {
+  Value {
+    PlaybackChannels 2
+  }
+  Variant."HiFi 7+1".Value {
+    PlaybackChannels 8
+  }
+}
+~~~
 
 */
 
