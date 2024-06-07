@@ -3,7 +3,7 @@
         "Name": "alsa-lib",
         "License": "GNU LESSER GENERAL PUBLIC LICENSE",
         "License File": "COPYING",
-        "Version Number": "1.2.6",
+        "Version Number": "1.2.11",
         "Owner": "zhangyunhu@huawei.com",
         "Upstream URL": "https://github.com/alsa-project/alsa-lib",
         "Description": "A library to interface with ALSA in the Linux kernel."
