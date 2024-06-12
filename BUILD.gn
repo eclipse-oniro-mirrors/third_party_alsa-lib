@@ -47,7 +47,7 @@ config("alsa_lib_config") {
   }
 }
 
-ohos_source_set("alsa_lib_dynamic") {
+ohos_shared_library("libasound") {
   sources = [
     "//third_party/alsa-lib/src/async.c",
     "//third_party/alsa-lib/src/conf.c",
@@ -166,12 +166,7 @@ ohos_source_set("alsa_lib_dynamic") {
   ]
 
   configs = [ ":alsa_lib_config" ]
-}
-
-ohos_shared_library("libasound") {
   deps = [
-    ":alsa_lib_dynamic",
-
     # conf files
     "src/conf:alsa-lib-prebuilt-all",
   ]
