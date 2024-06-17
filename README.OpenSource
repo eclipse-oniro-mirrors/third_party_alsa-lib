@@ -1,7 +1,7 @@
 [
     {
         "Name": "alsa-lib",
-        "License": "GNU LESSER GENERAL PUBLIC LICENSE",
+        "License": "LGPL V2.1",
         "License File": "COPYING",
         "Version Number": "1.2.11",
         "Owner": "zhangyunhu@huawei.com",
