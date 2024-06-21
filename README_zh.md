@@ -46,7 +46,7 @@ CONFIG_SND=y
 ```
 #### 5.2 产品化编译开关配置
 
-需要在各自产品配置文件中打开对应开关，路径如下：其中${product_company}表示您的企业名称，${product_name}表示您的产品名称
+需要在各自产品配置文件中打开对应开关，路径如下：其中 ${product_company} 表示您的企业名称，${product_name}表示您的产品名称
 ```bash
 
 /vendor/${product_company}/${product_name}/config.json
