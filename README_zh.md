@@ -46,7 +46,7 @@ CONFIG_SND=y
 ```
 #### 5.2 产品化编译开关配置
 
-需要在各自产品配置文件中打开对应开关，路径如下：其中${product_company}表示您的企业名称，${product_name}表示您的产品名称
+需要在各自产品配置文件中打开对应开关，路径如下：其中\\${product_company}表示您的企业名称，${product_name}表示您的产品名称
 ```bash
 
 /vendor/${product_company}/${product_name}/config.json
@@ -58,6 +58,7 @@ drivers_peripheral_audio_alsa_lib = true
 
 #### 5.3 alsa-lib组件编译依赖添加
 如需要重新实现Audio DAL，则需要添加alsa-lib组件的编译依赖，可以采用以下两种方法进行添加。
+
 **方法一（可选）：**
 在您的 bundle.json 文件 添加
 ```json
