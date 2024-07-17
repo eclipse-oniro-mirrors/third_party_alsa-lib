@@ -1,6 +1,5 @@
 /*
  *  version.h
- *
  */
 
 #define SND_LIB_MAJOR		1 /**< major number of library version */
