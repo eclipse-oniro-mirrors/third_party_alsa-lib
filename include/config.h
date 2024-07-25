@@ -1,6 +1,9 @@
 /* include/config.h.  Generated from config.h.in by configure.  */
 /* include/config.h.in.  Generated from configure.ac by autoheader.  */
 
+#ifndef __ALSA_CONFIG_H
+#define __ALSA_CONFIG_H
+
 /* Directory with aload* device files */
 #define ALOAD_DEVICE_DIRECTORY "/dev/"
 
@@ -259,3 +262,5 @@
 #ifndef __cplusplus
 /* #undef inline */
 #endif
+
+#endif /* __ALSA_CONFIG_H */
