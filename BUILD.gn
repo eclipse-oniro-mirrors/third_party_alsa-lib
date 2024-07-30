@@ -13,6 +13,23 @@
 
 import("//build/ohos.gni")
 
+config("alsa_lib_header") {
+    include_dirs = [
+        "//third_party/alsa-lib/include",
+        "//third_party/alsa-lib/include/sound",
+        "//third_party/alsa-lib/include/uapi",
+        "//third_party/alsa-lib/src/pcm",
+        "//third_party/alsa-lib/src/ucm",
+        "//third_party/alsa-lib/src/mixer",
+        "//third_party/alsa-lib/src/seq",
+        "//third_party/alsa-lib/src/hwdep",
+        "//third_party/alsa-lib/src/rawmidi",
+        "//third_party/alsa-lib/src/control",
+        "//third_party/alsa-lib/src/timer",
+        "{target_gen_dir}/include/"
+    ]
+}
+
 config("alsa_lib_config") {
   cflags = [
     "-Wno-sign-compare",
@@ -170,6 +187,7 @@ ohos_shared_library("libasound") {
     # conf files
     "src/conf:alsa-lib-prebuilt-all",
   ]
+  public_configs = [ ":alsa_lib_header" ]
   output_extension = "so"
   install_images = [ chipset_base_dir ]
   install_enable = true
