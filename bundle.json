@@ -28,7 +28,17 @@
         },
         "build": {
             "sub_component": [ "//third_party/alsa-lib:libasound" ],
-            "inner_kits": [],
+            "inner_kits": [
+                {
+                    "type": "so",
+                    "name": "//third_party/alsa-lib:libasound",
+                    "header": {
+                        "header_base": "//third_party/alsa-lib",
+                        "header_files": [
+                        ]
+                    }
+                }
+            ],
             "test": []
         }
     }
