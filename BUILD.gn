@@ -13,6 +13,10 @@
 
 import("//build/ohos.gni")
 
+declare_args() {
+  alsa_lib_feature_config_enable = false
+}
+
 config("alsa_lib_header") {
   include_dirs = [
     "//third_party/alsa-lib/include",
@@ -183,10 +187,13 @@ ohos_shared_library("libasound") {
   ]
 
   configs = [ ":alsa_lib_config" ]
-  deps = [
-    # conf files
-    "src/conf:alsa-lib-prebuilt-all",
-  ]
+  if (alsa_lib_feature_config_enable) {
+    deps = [
+      # conf files
+      "src/conf:alsa-lib-prebuilt-all",
+    ]
+  }
+
   public_configs = [ ":alsa_lib_header" ]
   output_extension = "so"
   install_images = [ chipset_base_dir ]
