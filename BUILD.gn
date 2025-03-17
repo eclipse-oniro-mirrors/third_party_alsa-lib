@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 
 declare_args() {
-    alsa_lib_feature_config_enable = false
+  alsa_lib_feature_config_enable = false
 }
 
 config("alsa_lib_header") {
