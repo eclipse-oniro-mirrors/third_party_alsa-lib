@@ -18,7 +18,7 @@
         "name": "alsa-lib",
         "subsystem": "thirdparty",
         "syscap": [],
-        "features": [],
+        "features": [ "alsa_lib_feature_config_enable" ],
         "adapted_system_type": [ "standard" ],
         "rom": "950KB",
         "ram": "988KB",
