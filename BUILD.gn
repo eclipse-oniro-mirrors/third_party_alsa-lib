@@ -146,6 +146,7 @@ ohos_shared_library("libasound") {
     "//third_party/alsa-lib/src/rawmidi/rawmidi_hw.c",
     "//third_party/alsa-lib/src/rawmidi/rawmidi_symbols.c",
     "//third_party/alsa-lib/src/rawmidi/rawmidi_virt.c",
+    "//third_party/alsa-lib/src/rawmidi/ump.c",
     "//third_party/alsa-lib/src/seq/seq.c",
     "//third_party/alsa-lib/src/seq/seq_event.c",
     "//third_party/alsa-lib/src/seq/seq_hw.c",
