@@ -322,9 +322,7 @@ ohos_shared_library("libalsa_midi") {
   ]
 
   configs = [ ":alsa_lib_config" ]
-  deps = [
-      "src/conf:alsa-lib-prebuilt-smixer.conf",
-  ]
+  deps = [ "src/conf:alsa-lib-prebuilt-smixer.conf" ]
 
   public_configs = [ ":alsa_lib_header" ]
   output_extension = "so"
