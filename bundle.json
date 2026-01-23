@@ -37,6 +37,15 @@
                         "header_files": [
                         ]
                     }
+                },
+                {
+                    "type": "so",
+                    "name": "//third_party/alsa-lib:libalsa_midi",
+                    "header": {
+                        "header_base": "//third_party/alsa-lib",
+                        "header_files": [
+                        ]
+                    }
                 }
             ],
             "test": []
