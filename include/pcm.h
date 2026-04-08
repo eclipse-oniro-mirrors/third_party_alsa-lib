@@ -26,14 +26,18 @@
  *
  */
 
+#if !defined(__ASOUNDLIB_H) && !defined(ALSA_LIBRARY_BUILD)
+/* don't use ALSA_LIBRARY_BUILD define in sources outside alsa-lib */
+#warning "use #include <alsa/asoundlib.h>, <alsa/pcm.h> should not be used directly"
+#include <alsa/asoundlib.h>
+#endif
+
 #ifndef __ALSA_PCM_H
-#define __ALSA_PCM_H
+#define __ALSA_PCM_H /**< header include loop protection */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdint.h>
 
 /**
  *  \defgroup PCM PCM Interface
@@ -299,7 +303,7 @@ typedef enum _snd_pcm_subformat {
 typedef enum _snd_pcm_state {
 	/** Open */
 	SND_PCM_STATE_OPEN = 0,
-	/** Setup installed */ 
+	/** Setup installed */
 	SND_PCM_STATE_SETUP,
 	/** Ready to start */
 	SND_PCM_STATE_PREPARED,
@@ -508,6 +512,9 @@ typedef union _snd_pcm_sync_id {
 	unsigned int id32[4];
 } snd_pcm_sync_id_t;
 
+/** synchronization ID size (see snd_pcm_hw_params_get_sync) */
+#define SND_PCM_HW_PARAMS_SYNC_SIZE	16
+
 /** Infinite wait for snd_pcm_wait() */
 #define SND_PCM_WAIT_INFINITE		(-1)
 /** Wait for next i/o in snd_pcm_wait() */
@@ -518,9 +525,9 @@ typedef union _snd_pcm_sync_id {
 /** #SND_PCM_TYPE_METER scope handle */
 typedef struct _snd_pcm_scope snd_pcm_scope_t;
 
-int snd_pcm_open(snd_pcm_t **pcm, const char *name, 
+int snd_pcm_open(snd_pcm_t **pcm, const char *name,
 		 snd_pcm_stream_t stream, int mode);
-int snd_pcm_open_lconf(snd_pcm_t **pcm, const char *name, 
+int snd_pcm_open_lconf(snd_pcm_t **pcm, const char *name,
 		       snd_pcm_stream_t stream, int mode,
 		       snd_config_t *lconf);
 int snd_pcm_open_fallback(snd_pcm_t **pcm, snd_config_t *root,
@@ -536,7 +543,7 @@ int snd_pcm_poll_descriptors(snd_pcm_t *pcm, struct pollfd *pfds, unsigned int s
 int snd_pcm_poll_descriptors_revents(snd_pcm_t *pcm, struct pollfd *pfds, unsigned int nfds, unsigned short *revents);
 int snd_pcm_nonblock(snd_pcm_t *pcm, int nonblock);
 static __inline__ int snd_pcm_abort(snd_pcm_t *pcm) { return snd_pcm_nonblock(pcm, 2); }
-int snd_async_add_pcm_handler(snd_async_handler_t **handler, snd_pcm_t *pcm, 
+int snd_async_add_pcm_handler(snd_async_handler_t **handler, snd_pcm_t *pcm,
 			      snd_async_callback_t callback, void *private_data);
 snd_pcm_t *snd_async_handler_get_pcm(snd_async_handler_t *handler);
 int snd_pcm_info(snd_pcm_t *pcm, snd_pcm_info_t *info);
@@ -672,15 +679,15 @@ snd_pcm_chmap_t *snd_pcm_chmap_parse_string(const char *str);
 
 int snd_pcm_recover(snd_pcm_t *pcm, int err, int silent);
 int snd_pcm_set_params(snd_pcm_t *pcm,
-                       snd_pcm_format_t format,
-                       snd_pcm_access_t access,
-                       unsigned int channels,
-                       unsigned int rate,
-                       int soft_resample,
-                       unsigned int latency);
+		       snd_pcm_format_t format,
+		       snd_pcm_access_t access,
+		       unsigned int channels,
+		       unsigned int rate,
+		       int soft_resample,
+		       unsigned int latency);
 int snd_pcm_get_params(snd_pcm_t *pcm,
-                       snd_pcm_uframes_t *buffer_size,
-                       snd_pcm_uframes_t *period_size);
+		       snd_pcm_uframes_t *buffer_size,
+		       snd_pcm_uframes_t *period_size);
 
 /** \} */
 
@@ -747,6 +754,7 @@ int snd_pcm_hw_params_get_rate_numden(const snd_pcm_hw_params_t *params,
 				      unsigned int *rate_den);
 int snd_pcm_hw_params_get_sbits(const snd_pcm_hw_params_t *params);
 int snd_pcm_hw_params_get_fifo_size(const snd_pcm_hw_params_t *params);
+const unsigned char * snd_pcm_hw_params_get_sync(const snd_pcm_hw_params_t *params);
 
 #if 0
 typedef struct _snd_pcm_hw_strategy snd_pcm_hw_strategy_t;
@@ -1141,7 +1149,7 @@ snd_pcm_sframes_t snd_pcm_mmap_commit(snd_pcm_t *pcm,
 snd_pcm_sframes_t snd_pcm_mmap_writei(snd_pcm_t *pcm, const void *buffer, snd_pcm_uframes_t size);
 snd_pcm_sframes_t snd_pcm_mmap_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size);
 snd_pcm_sframes_t snd_pcm_mmap_writen(snd_pcm_t *pcm, void **bufs, snd_pcm_uframes_t size);
-snd_pcm_sframes_t snd_pcm_mmap_readn(snd_pcm_t *pcm, void **bufs, snd_pcm_uframes_t size);                                                                
+snd_pcm_sframes_t snd_pcm_mmap_readn(snd_pcm_t *pcm, void **bufs, snd_pcm_uframes_t size);
 
 /** \} */
 
@@ -1318,7 +1326,7 @@ int16_t *snd_pcm_scope_s16_get_channel_buffer(snd_pcm_scope_t *scope,
 /** Simple PCM latency type */
 typedef enum _snd_spcm_latency {
 	/** standard latency - for standard playback or capture
-            (estimated latency in one direction 350ms) */
+	    (estimated latency in one direction 350ms) */
 	SND_SPCM_LATENCY_STANDARD = 0,
 	/** medium latency - software phones etc.
 	    (estimated latency in one direction maximally 25ms */

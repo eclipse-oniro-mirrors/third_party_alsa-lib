@@ -129,19 +129,9 @@ ALSA_0.9.3 {
 } ALSA_0.9.0;
 
 ALSA_0.9.5 {
-#ifdef HAVE_ALISP_SYMS
-  global:
-
-    alsa_lisp;
-#endif
 } ALSA_0.9.3;
 
 ALSA_0.9.7 {
-#ifdef HAVE_ALISP_SYMS
-  global:
-
-    alsa_lisp_*;
-#endif
 } ALSA_0.9.5;
 
 ALSA_1.1.6 {
@@ -169,10 +159,13 @@ ALSA_1.2.9 {
 ALSA_1.2.10 {
   global:
 
+#ifdef HAVE_RAWMIDI_SYMS
     snd_ump_*;
+#endif
     snd_ctl_ump_next_device;
     snd_ctl_ump_endpoint_info;
     snd_ctl_ump_block_info;
+#ifdef HAVE_SEQ_SYMS
     snd_seq_ump_*;
     snd_seq_client_info_get_midi_version;
     snd_seq_client_info_get_ump_group_enabled;
@@ -192,4 +185,46 @@ ALSA_1.2.10 {
     snd_seq_port_info_set_ump_group;
     snd_seq_set_client_midi_version;
     snd_seq_set_client_ump_conversion;
+#endif
 } ALSA_1.2.9;
+
+ALSA_1.2.13 {
+#if defined(HAVE_PCM_SYMS) || defined(HAVE_SEQ_SYMS) || defined(HAVE_RAWMIDI_SYMS)
+  global:
+#endif
+
+#ifdef HAVE_PCM_SYMS
+    snd_pcm_hw_params_get_sync;
+#endif
+
+#ifdef HAVE_SEQ_SYMS
+    snd_seq_create_ump_endpoint;
+    snd_seq_create_ump_block;
+    snd_seq_queue_tempo_get_tempo_base;
+    snd_seq_queue_tempo_set_tempo_base;
+    snd_seq_has_queue_tempo_base;
+    snd_seq_port_info_get_ump_is_midi1;
+    snd_seq_port_info_set_ump_is_midi1;
+#endif
+#ifdef HAVE_RAWMIDI_SYMS
+    snd_ump_endpoint_info_clear;
+    snd_ump_endpoint_info_set_*;
+    snd_ump_block_info_clear;
+    snd_ump_block_info_set_*;
+    snd_ump_packet_length;
+#endif
+} ALSA_1.2.10;
+
+
+ALSA_1.2.15 {
+  global:
+
+    snd_lib_vlog;
+    snd_lib_log;
+    snd_lib_log_set_handler;
+    snd_lib_log_set_local;
+    snd_lib_log_priority;
+    snd_lib_log_interface;
+    snd_lib_log_filter;
+    snd_lib_check;
+} ALSA_1.2.13;

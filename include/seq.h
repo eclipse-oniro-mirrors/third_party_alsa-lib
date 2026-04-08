@@ -26,8 +26,14 @@
  *
  */
 
+#if !defined(__ASOUNDLIB_H) && !defined(ALSA_LIBRARY_BUILD)
+/* don't use ALSA_LIBRARY_BUILD define in sources outside alsa-lib */
+#warning "use #include <alsa/asoundlib.h>, <alsa/seq.h> should not be used directly"
+#include <alsa/asoundlib.h>
+#endif
+
 #ifndef __ALSA_SEQ_H
-#define __ALSA_SEQ_H
+#define __ALSA_SEQ_H /**< header include loop protection */
 
 #ifdef __cplusplus
 extern "C" {
@@ -129,7 +135,7 @@ typedef enum snd_seq_client_type {
 	SND_SEQ_USER_CLIENT     = 1,	/**< user client */
 	SND_SEQ_KERNEL_CLIENT   = 2	/**< kernel client */
 } snd_seq_client_type_t;
-                        
+
 /** client MIDI version */
 enum {
 	SND_SEQ_CLIENT_LEGACY_MIDI = 0,		/**< Legacy client */
@@ -250,8 +256,8 @@ typedef struct _snd_seq_port_info snd_seq_port_info_t;
 
 /** port direction */
 #define SND_SEQ_PORT_DIR_UNKNOWN	0	/**< Unknown */
-#define SND_SEQ_PORT_DIR_INPUT		1	/**< Input only */
-#define SND_SEQ_PORT_DIR_OUTPUT		2	/**< Output only */
+#define SND_SEQ_PORT_DIR_INPUT		1	/**< Input only; sink, receiver */
+#define SND_SEQ_PORT_DIR_OUTPUT		2	/**< Output only; source, transmitter */
 #define SND_SEQ_PORT_DIR_BIDIRECTION	3	/**< Input/output bidirectional */
 
 /* port type */
@@ -318,6 +324,7 @@ int snd_seq_port_info_get_timestamp_real(const snd_seq_port_info_t *info);
 int snd_seq_port_info_get_timestamp_queue(const snd_seq_port_info_t *info);
 int snd_seq_port_info_get_direction(const snd_seq_port_info_t *info);
 int snd_seq_port_info_get_ump_group(const snd_seq_port_info_t *info);
+int snd_seq_port_info_get_ump_is_midi1(const snd_seq_port_info_t *info);
 
 void snd_seq_port_info_set_client(snd_seq_port_info_t *info, int client);
 void snd_seq_port_info_set_port(snd_seq_port_info_t *info, int port);
@@ -334,6 +341,7 @@ void snd_seq_port_info_set_timestamp_real(snd_seq_port_info_t *info, int realtim
 void snd_seq_port_info_set_timestamp_queue(snd_seq_port_info_t *info, int queue);
 void snd_seq_port_info_set_direction(snd_seq_port_info_t *info, int direction);
 void snd_seq_port_info_set_ump_group(snd_seq_port_info_t *info, int ump_group);
+void snd_seq_port_info_set_ump_is_midi1(snd_seq_port_info_t *info, int is_midi1);
 
 int snd_seq_create_port(snd_seq_t *handle, snd_seq_port_info_t *info);
 int snd_seq_delete_port(snd_seq_t *handle, int port);
@@ -506,13 +514,16 @@ unsigned int snd_seq_queue_tempo_get_tempo(const snd_seq_queue_tempo_t *info);
 int snd_seq_queue_tempo_get_ppq(const snd_seq_queue_tempo_t *info);
 unsigned int snd_seq_queue_tempo_get_skew(const snd_seq_queue_tempo_t *info);
 unsigned int snd_seq_queue_tempo_get_skew_base(const snd_seq_queue_tempo_t *info);
+unsigned int snd_seq_queue_tempo_get_tempo_base(const snd_seq_queue_tempo_t *info);
 void snd_seq_queue_tempo_set_tempo(snd_seq_queue_tempo_t *info, unsigned int tempo);
 void snd_seq_queue_tempo_set_ppq(snd_seq_queue_tempo_t *info, int ppq);
 void snd_seq_queue_tempo_set_skew(snd_seq_queue_tempo_t *info, unsigned int skew);
 void snd_seq_queue_tempo_set_skew_base(snd_seq_queue_tempo_t *info, unsigned int base);
+void snd_seq_queue_tempo_set_tempo_base(snd_seq_queue_tempo_t *info, unsigned int tempo_base);
 
 int snd_seq_get_queue_tempo(snd_seq_t *handle, int q, snd_seq_queue_tempo_t *tempo);
 int snd_seq_set_queue_tempo(snd_seq_t *handle, int q, snd_seq_queue_tempo_t *tempo);
+int snd_seq_has_queue_tempo_base(snd_seq_t *handle);
 
 /*
  */

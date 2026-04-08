@@ -3,22 +3,6 @@
  *  Main header file for the ALSA sequencer
  *  Copyright (c) 1998-1999 by Frank van de Pol <fvdpol@coil.demon.nl>
  *            (c) 1998-1999 by Jaroslav Kysela <perex@perex.cz>
- *
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 2 of the License, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
- *
  */
 #ifndef __SOUND_ASEQUENCER_H
 #define __SOUND_ASEQUENCER_H
@@ -26,7 +10,7 @@
 #include <sound/asound.h>
 
 /** version of the sequencer */
-#define SNDRV_SEQ_VERSION SNDRV_PROTOCOL_VERSION(1, 0, 3)
+#define SNDRV_SEQ_VERSION SNDRV_PROTOCOL_VERSION(1, 0, 5)
 
 /**
  * definition of sequencer event types
@@ -45,7 +29,7 @@
 #define SNDRV_SEQ_EVENT_NOTEON		6
 #define SNDRV_SEQ_EVENT_NOTEOFF		7
 #define SNDRV_SEQ_EVENT_KEYPRESS	8
-	
+
 /** control messages (channel specific)
  * event data type = #snd_seq_ev_ctrl
  */
@@ -65,13 +49,13 @@
 #define SNDRV_SEQ_EVENT_QFRAME		22	/* midi time code quarter frame */
 #define SNDRV_SEQ_EVENT_TIMESIGN	23	/* SMF Time Signature event */
 #define SNDRV_SEQ_EVENT_KEYSIGN		24	/* SMF Key Signature event */
-	        
+
 /** timer messages
  * event data type = snd_seq_ev_queue_control
  */
 #define SNDRV_SEQ_EVENT_START		30	/* midi Real Time Start message */
 #define SNDRV_SEQ_EVENT_CONTINUE	31	/* midi Real Time Continue message */
-#define SNDRV_SEQ_EVENT_STOP		32	/* midi Real Time Stop message */	
+#define SNDRV_SEQ_EVENT_STOP		32	/* midi Real Time Stop message */
 #define	SNDRV_SEQ_EVENT_SETPOS_TICK	33	/* set tick queue position */
 #define SNDRV_SEQ_EVENT_SETPOS_TIME	34	/* set realtime queue position */
 #define SNDRV_SEQ_EVENT_TEMPO		35	/* (SMF) Tempo event */
@@ -107,6 +91,9 @@
  */
 #define SNDRV_SEQ_EVENT_PORT_SUBSCRIBED	66	/* ports connected */
 #define SNDRV_SEQ_EVENT_PORT_UNSUBSCRIBED 67	/* ports disconnected */
+
+#define SNDRV_SEQ_EVENT_UMP_EP_CHANGE	68	/* UMP EP info has changed */
+#define SNDRV_SEQ_EVENT_UMP_BLOCK_CHANGE 69	/* UMP block info has changed */
 
 /* 70-89:  synthesizer events - obsoleted */
 
@@ -269,6 +256,12 @@ struct snd_seq_ev_quote {
 	struct snd_seq_event *event;		/* quoted event */
 } __attribute__((packed));
 
+	/* UMP info change notify */
+struct snd_seq_ev_ump_notify {
+	unsigned char client;	/* Client number */
+	unsigned char block;	/* Block number (optional) */
+};
+
 union snd_seq_event_data { /* event data... */
 	struct snd_seq_ev_note note;
 	struct snd_seq_ev_ctrl control;
@@ -281,6 +274,7 @@ union snd_seq_event_data { /* event data... */
 	struct snd_seq_connect connect;
 	struct snd_seq_result result;
 	struct snd_seq_ev_quote quote;
+	struct snd_seq_ev_ump_notify ump_notify;
 };
 
 	/* sequencer event */
@@ -288,7 +282,7 @@ struct snd_seq_event {
 	snd_seq_event_type_t type;	/* event type */
 	unsigned char flags;		/* event flags */
 	char tag;
-	
+
 	unsigned char queue;		/* schedule queue */
 	union snd_seq_timestamp time;	/* schedule time */
 
@@ -358,7 +352,7 @@ typedef int __bitwise snd_seq_client_type_t;
 #define	NO_CLIENT	((snd_seq_client_type_t) 0)
 #define	USER_CLIENT	((snd_seq_client_type_t) 1)
 #define	KERNEL_CLIENT	((snd_seq_client_type_t) 2)
-                        
+
 	/* event filter flags */
 #define SNDRV_SEQ_FILTER_BROADCAST	(1U<<0)	/* accept broadcast messages */
 #define SNDRV_SEQ_FILTER_MULTICAST	(1U<<1)	/* accept multicast messages */
@@ -477,6 +471,8 @@ struct snd_seq_remove_events {
 #define SNDRV_SEQ_PORT_FLG_TIMESTAMP	(1<<1)
 #define SNDRV_SEQ_PORT_FLG_TIME_REAL	(1<<2)
 
+#define SNDRV_SEQ_PORT_FLG_IS_MIDI1	(1<<3)	/* Keep MIDI 1.0 protocol */
+
 /* port direction */
 #define SNDRV_SEQ_PORT_DIR_UNKNOWN	0
 #define SNDRV_SEQ_PORT_DIR_INPUT	1
@@ -539,11 +535,12 @@ struct snd_seq_queue_status {
 /* queue tempo */
 struct snd_seq_queue_tempo {
 	int queue;			/* sequencer queue */
-	unsigned int tempo;		/* current tempo, us/tick */
+	unsigned int tempo;		/* current tempo, us/tick (or different time-base below) */
 	int ppq;			/* time resolution, ticks/quarter */
 	unsigned int skew_value;	/* queue skew */
 	unsigned int skew_base;		/* queue skew base */
-	char reserved[24];		/* for the future */
+	unsigned short tempo_base;	/* tempo base in nsec unit; either 10 or 1000 */
+	char reserved[22];		/* for the future */
 };
 
 
@@ -616,7 +613,7 @@ struct snd_seq_client_ump_info {
 	int client;			/* client number to inquire/set */
 	int type;			/* type to inquire/set */
 	unsigned char info[512];	/* info (either UMP ep or block info) */
-} __packed;
+} __attribute__((packed));
 
 /*
  *  IOCTL commands
