@@ -25,8 +25,14 @@
  *
  */
 
+#if !defined(__ASOUNDLIB_H) && !defined(ALSA_LIBRARY_BUILD)
+/* don't use ALSA_LIBRARY_BUILD define in sources outside alsa-lib */
+#warning "use #include <alsa/asoundlib.h>, <alsa/seqmid.h> should not be used directly"
+#include <alsa/asoundlib.h>
+#endif
+
 #ifndef __ALSA_SEQMID_H
-#define __ALSA_SEQMID_H
+#define __ALSA_SEQMID_H /**< header include loop protection */
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +48,7 @@ extern "C" {
 /**
  * \brief initialize event record
  * \param ev event record pointer
- * 
+ *
  * This macro clears the given event record pointer to the default status.
  */
 static inline void snd_seq_ev_clear(snd_seq_event_t *ev)
@@ -124,7 +130,7 @@ static inline void snd_seq_ump_ev_clear(snd_seq_ump_event_t *ev)
  *
  * This macro sets the event to the direct passing mode
  * to be delivered immediately without queueing.
- * 
+ *
  * \sa snd_seq_ev_schedule_tick(), snd_seq_ev_schedule_real()
  */
 #define snd_seq_ev_set_direct(ev) \
@@ -519,6 +525,13 @@ int snd_seq_reset_pool_input(snd_seq_t *seq);
 #define snd_seq_ev_set_sysex(ev,datalen,dataptr) \
 	((ev)->type = SND_SEQ_EVENT_SYSEX,\
 	 snd_seq_ev_set_variable(ev, datalen, dataptr))
+
+/* Helper API functions for UMP endpoint and block creations */
+int snd_seq_create_ump_endpoint(snd_seq_t *seq,
+				const snd_ump_endpoint_info_t *info,
+				unsigned int num_groups);
+int snd_seq_create_ump_block(snd_seq_t *seq, int blkid,
+			     const snd_ump_block_info_t *info);
 
 /** \} */
 

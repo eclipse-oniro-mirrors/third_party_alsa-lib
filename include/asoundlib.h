@@ -38,6 +38,8 @@
 #include <poll.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <time.h>
 #include <endian.h>
 
 #ifndef DOC_HIDDEN
@@ -60,6 +62,7 @@
 #include <alsa/hwdep.h>
 #include <alsa/control.h>
 #include <alsa/mixer.h>
+#include <alsa/ump_msg.h>
 #include <alsa/seq_event.h>
 #include <alsa/seq.h>
 #include <alsa/seqmid.h>

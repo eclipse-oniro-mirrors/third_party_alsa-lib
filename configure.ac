@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT(alsa-lib, 1.2.11)
+AC_INIT(alsa-lib, 1.2.15.3)
 
 AC_CONFIG_SRCDIR([src/control/control.c])
 AC_CONFIG_MACRO_DIR([m4])
@@ -52,6 +52,7 @@ dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 AC_CHECK_FUNCS([uselocale])
 AC_CHECK_FUNCS([eaccess])
+dnl AC_CHECK_DECLS([closefrom])
 
 dnl Enable largefile support
 AC_SYS_LARGEFILE
@@ -67,6 +68,15 @@ cat <<EOF
   Please, do not try to compile static and shared libraries together.
   See INSTALL file for more details (do not use --enable-shared=yes with
   --enable-static=yes).
+EOF
+  exit 1
+fi
+
+dnl Do not use --with-pic for shared libraries (consider to use PIE)
+if test "$enable_static" = "yes" -a "$pic_mode" = "yes"; then
+cat <<EOF
+  Please, do not enable PIC (--with-pic) for static library. Consider
+  to remove this option or use PIE flags.
 EOF
   exit 1
 fi
@@ -410,10 +420,6 @@ AC_ARG_ENABLE(ucm,
 AC_ARG_ENABLE(topology,
   AS_HELP_STRING([--disable-topology], [disable the DSP topology component]),
   [build_topology="$enableval"], [build_topology="yes"])
-AC_ARG_ENABLE(alisp,
-  AS_HELP_STRING([--enable-alisp], [enable the alisp component]),
-  [build_alisp="$enableval"], [build_alisp="no"])
-test "$softfloat" = "yes" && build_alisp="no"
 AC_ARG_ENABLE(old-symbols,
   AS_HELP_STRING([--disable-old-symbols], [disable old obsoleted symbols]),
   [keep_old_symbols="$enableval"], [keep_old_symbols="yes"])
@@ -474,6 +480,12 @@ fi
 AC_SUBST(PYTHON_LIBS)
 AC_SUBST(PYTHON_INCLUDES)
 
+if test "$build_rawmidi" != "yes"; then
+  if test "$build_seq" = "yes"; then
+    AC_ERROR([Cannot enable sequencer without rawmidi])
+  fi
+fi
+
 AM_CONDITIONAL([BUILD_MIXER], [test x$build_mixer = xyes])
 AM_CONDITIONAL([BUILD_PCM], [test x$build_pcm = xyes])
 AM_CONDITIONAL([BUILD_RAWMIDI], [test x$build_rawmidi = xyes])
@@ -481,7 +493,6 @@ AM_CONDITIONAL([BUILD_HWDEP], [test x$build_hwdep = xyes])
 AM_CONDITIONAL([BUILD_SEQ], [test x$build_seq = xyes])
 AM_CONDITIONAL([BUILD_UCM], [test x$build_ucm = xyes])
 AM_CONDITIONAL([BUILD_TOPOLOGY], [test x$build_topology = xyes])
-AM_CONDITIONAL([BUILD_ALISP], [test x$build_alisp = xyes])
 AM_CONDITIONAL([BUILD_MIXER_MODULES], [test x$build_mixer_modules = xyes])
 AM_CONDITIONAL([BUILD_MIXER_PYMODULES], [test x$build_mixer_pymodules = xyes])
 
@@ -619,6 +630,7 @@ AM_CONDITIONAL([BUILD_PCM_PLUGIN_DSNOOP], [test x$build_pcm_dsnoop = xyes])
 AM_CONDITIONAL([BUILD_PCM_PLUGIN_ASYM], [test x$build_pcm_asym = xyes])
 AM_CONDITIONAL([BUILD_PCM_PLUGIN_IEC958], [test x$build_pcm_iec958 = xyes])
 AM_CONDITIONAL([BUILD_PCM_PLUGIN_SOFTVOL], [test x$build_pcm_softvol = xyes])
+AM_CONDITIONAL([BUILD_PCM_PLUGIN_EXTERNAL], [test x$build_pcm_extplug = xyes -o x$build_pcm_ioplug = xyes])
 AM_CONDITIONAL([BUILD_PCM_PLUGIN_EXTPLUG], [test x$build_pcm_extplug = xyes])
 AM_CONDITIONAL([BUILD_PCM_PLUGIN_IOPLUG], [test x$build_pcm_ioplug = xyes])
 AM_CONDITIONAL([BUILD_PCM_PLUGIN_MMAP_EMUL], [test x$build_pcm_mmap_emul = xyes])
@@ -757,13 +769,13 @@ AC_CONFIG_FILES(Makefile doc/Makefile doc/pictures/Makefile doc/doxygen.cfg \
 		src/pcm/Makefile src/pcm/scopes/Makefile \
 		src/rawmidi/Makefile src/timer/Makefile \
 		src/hwdep/Makefile src/seq/Makefile src/ucm/Makefile \
-		src/alisp/Makefile src/topology/Makefile \
+		src/topology/Makefile \
 		src/conf/Makefile \
 		src/conf/cards/Makefile \
 		src/conf/ctl/Makefile \
 		src/conf/pcm/Makefile \
 		modules/Makefile modules/mixer/Makefile modules/mixer/simple/Makefile \
-		alsalisp/Makefile aserver/Makefile \
+		aserver/Makefile \
 		test/Makefile test/lsb/Makefile \
 		utils/Makefile utils/alsa-lib.spec utils/alsa.pc utils/alsa-topology.pc)
 
@@ -811,6 +823,7 @@ test "$build_pcm" = "yes" && echo "#include <alsa/timer.h>" >> include/asoundlib
 test "$build_hwdep" = "yes" && echo "#include <alsa/hwdep.h>" >> include/asoundlib.h
 echo "#include <alsa/control.h>" >> include/asoundlib.h
 test "$build_mixer" = "yes" && echo "#include <alsa/mixer.h>" >> include/asoundlib.h
+test "$build_seq" = "yes" && echo "#include <alsa/ump_msg.h>" >> include/asoundlib.h
 test "$build_seq" = "yes" && echo "#include <alsa/seq_event.h>" >> include/asoundlib.h
 test "$build_seq" = "yes" && echo "#include <alsa/seq.h>" >> include/asoundlib.h
 test "$build_seq" = "yes" && echo "#include <alsa/seqmid.h>" >> include/asoundlib.h
