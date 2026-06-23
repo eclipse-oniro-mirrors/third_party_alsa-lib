@@ -295,8 +295,12 @@ extern snd_lib_error_handler_t snd_err_msg;
 
 /* We want the .gnu.warning.SYMBOL section to be unallocated.  */
 #  ifdef HAVE_ASM_PREVIOUS_DIRECTIVE
-#   define __make_section_unallocated(section_string)	\
-  asm (".section " section_string "\n\t.previous");
+	#ifdef ALSALIB_LITE
+	#define __make_section_unallocated(section_string)
+	#else
+	#define __make_section_unallocated(section_string) \
+		asm (".section " section_string "\n\t.previous");
+	#endif
 #  elif defined HAVE_ASM_POPSECTION_DIRECTIVE
 #   define __make_section_unallocated(section_string)	\
   asm (".pushsection " section_string "\n\t.popsection");
