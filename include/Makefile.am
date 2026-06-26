@@ -5,7 +5,7 @@ alsaincludedir = ${includedir}/alsa
 
 alsainclude_HEADERS = asoundlib.h asoundef.h \
 		      version.h global.h input.h output.h error.h \
-		      conf.h control.h
+		      conf.h control.h ohos_config.h
 
 if BUILD_CTL_PLUGIN
 alsainclude_HEADERS += control_plugin.h

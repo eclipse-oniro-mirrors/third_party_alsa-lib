@@ -431,6 +431,7 @@ beginning:</P>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <locale.h>
+#include <stdatomic.h>
 #ifdef HAVE_LIBPTHREAD
 #include <pthread.h>
 #endif
@@ -441,6 +442,65 @@ beginning:</P>
 static pthread_mutex_t snd_config_update_mutex;
 static pthread_once_t snd_config_update_mutex_once = PTHREAD_ONCE_INIT;
 #endif
+
+enum {
+	OHOS_ALSA_GLOBAL_CONFIG_DISABLED = 0,
+	OHOS_ALSA_GLOBAL_CONFIG_ENABLED = 1,
+	OHOS_ALSA_GLOBAL_CONFIG_DISABLED_ACCESSED = 2,
+};
+
+#define OHOS_ALSA_EMPTY_GLOBAL_CONFIGS ":"
+
+#ifdef OHOS_ALSA_GLOBAL_CONFIG_DEFAULT_ENABLE
+#define OHOS_ALSA_GLOBAL_CONFIG_INITIAL_STATE OHOS_ALSA_GLOBAL_CONFIG_ENABLED
+#else
+#define OHOS_ALSA_GLOBAL_CONFIG_INITIAL_STATE OHOS_ALSA_GLOBAL_CONFIG_DISABLED
+#endif
+
+static atomic_int ohos_alsa_global_config_state =
+	ATOMIC_VAR_INIT(OHOS_ALSA_GLOBAL_CONFIG_INITIAL_STATE);
+
+int snd_ohos_enable_global_config(void)
+{
+	int state = atomic_load_explicit(&ohos_alsa_global_config_state, memory_order_acquire);
+
+	for (;;) {
+		if (state == OHOS_ALSA_GLOBAL_CONFIG_ENABLED) {
+			return 0;
+		}
+		if (state == OHOS_ALSA_GLOBAL_CONFIG_DISABLED_ACCESSED) {
+			return -EBUSY;
+		}
+		if (atomic_compare_exchange_weak_explicit(&ohos_alsa_global_config_state,
+							  &state,
+							  OHOS_ALSA_GLOBAL_CONFIG_ENABLED,
+							  memory_order_acq_rel,
+							  memory_order_acquire)) {
+			return 0;
+		}
+	}
+}
+
+static int OhosMarkGlobalConfigAccessAndCheckEnabled(void)
+{
+	int state = atomic_load_explicit(&ohos_alsa_global_config_state, memory_order_acquire);
+
+	for (;;) {
+		if (state == OHOS_ALSA_GLOBAL_CONFIG_ENABLED) {
+			return 1;
+		}
+		if (state == OHOS_ALSA_GLOBAL_CONFIG_DISABLED_ACCESSED) {
+			return 0;
+		}
+		if (atomic_compare_exchange_weak_explicit(&ohos_alsa_global_config_state,
+							  &state,
+							  OHOS_ALSA_GLOBAL_CONFIG_DISABLED_ACCESSED,
+							  memory_order_acq_rel,
+							  memory_order_acquire)) {
+			return 0;
+		}
+	}
+}
 
 struct _snd_config {
 	char *id;
@@ -3926,6 +3986,16 @@ int snd_config_search_alias_hooks(snd_config_t *config,
 /** The name of the environment variable containing the files list for #snd_config_update. */
 #define ALSA_CONFIG_PATH_VAR "ALSA_CONFIG_PATH"
 
+static const char *OhosGetConfigPathEnv(const char *name)
+{
+	if (strcmp(name, ALSA_CONFIG_PATH_VAR) == 0 &&
+	    !OhosMarkGlobalConfigAccessAndCheckEnabled()) {
+		return OHOS_ALSA_EMPTY_GLOBAL_CONFIGS;
+	}
+
+	return getenv(name);
+}
+
 /**
  * \brief Configuration top-level node (the global configuration).
  *
@@ -4505,6 +4575,7 @@ SND_DLSYM_BUILD_VERSION(snd_config_hook_load_for_all_cards, SND_CONFIG_DLSYM_VER
  * Any errors encountered when parsing the input or returned by hooks or
  * functions.
  */
+#define getenv OhosGetConfigPathEnv
 int snd_config_update_r(snd_config_t **_top, snd_config_update_t **_update, const char *cfgs)
 {
 	int err;
@@ -4654,6 +4725,7 @@ _nextf:
 	*_update = local;
 	return 1;
 }
+#undef getenv
 
 /**
  * \brief Updates #snd_config by rereading the global configuration files (if needed).
