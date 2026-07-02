@@ -1,12 +1,11 @@
 [
     {
         "Name": "alsa-lib",
-        "License": "LGPL V2.1",
+        "License": "LGPL-2.1-or-later",
         "License File": "COPYING",
         "Version Number": "v1.2.15.3",
         "Owner": "zhangyunhu@huawei.com",
         "Upstream URL": "https://github.com/alsa-project/alsa-lib",
-        "Description": "A library to interface with ALSA in the Linux kernel.",
-        "Dependencies": ""
+        "Description": "A library to interface with ALSA in the Linux kernel."
     }
 ]
