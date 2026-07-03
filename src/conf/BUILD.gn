@@ -1,8 +1,569 @@
 # DO NOT EDIT IT
 # Author: Allen.Riemann
 
-import("//build/ohos.gni")
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/ndk/ndk.gni")
+} else {
+  import("//build/ohos.gni")
+}
 
+
+if (defined(ohos_lite)) {
+    alsa_lib_prebuilt_all = []
+
+    copy("alsa-lib-prebuilt-smixer.conf") {
+      sources = ["smixer.conf"]
+      outputs = [ "$root_out_dir/system/etc/smixer.conf" ]
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-smixer.conf" ]
+
+    copy("alsa-lib-prebuilt-alsa.conf") {
+      sources = ["alsa.conf" ]
+      outputs = [ "$root_out_dir/system/etc/audio/alsa/share/alsa.conf" ]
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-alsa.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/modem.conf") {
+      sources = ["pcm/modem.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/modem.conf" ]
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/modem.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/dmix.conf") {
+      sources = [ "pcm/dmix.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/dmix.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/dmix.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/surround21.conf") {
+      sources = [ "pcm/surround21.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/surround21.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround21.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/dsnoop.conf") {
+      sources = [ "pcm/dsnoop.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/dsnoop.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/dsnoop.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/side.conf") {
+      sources = [ "pcm/side.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/side.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/side.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/dpl.conf") {
+      sources = [ "pcm/dpl.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/dpl.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/dpl.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/surround71.conf") {
+      sources = [ "pcm/surround71.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/surround71.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround71.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/surround40.conf") {
+      sources = [ "pcm/surround40.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/surround40.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround40.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/rear.conf") {
+      sources = [ "pcm/rear.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/rear.conf" ]
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/rear.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/surround50.conf") {
+      sources = [ "pcm/surround50.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/surround50.conf" ]
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround50.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/hdmi.conf") {
+      sources = [ "pcm/hdmi.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/hdmi.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/hdmi.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/surround51.conf") {
+      sources = [ "pcm/surround51.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/surround51.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround51.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/front.conf") {
+      sources = [ "pcm/front.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/front.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/front.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/iec958.conf") {
+      sources = [ "pcm/iec958.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/iec958.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/iec958.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/surround41.conf") {
+      sources = [ "pcm/surround41.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/surround41.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/surround41.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/center_lfe.conf") {
+      sources = [ "pcm/center_lfe.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/center_lfe.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/center_lfe.conf" ]
+
+    copy("alsa-lib-prebuilt-pcm/default.conf") {
+      sources = [ "pcm/default.conf" ]
+      outputs = [ "$root_out_dir/system/etc/pcm/default.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-pcm/default.conf" ]
+
+    copy("alsa-lib-prebuilt-ctl/default.conf") {
+      sources = [ "ctl/default.conf" ]
+      outputs = [ "$root_out_dir/system/etc/ctl/default.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-ctl/default.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/AU8820.conf") {
+      sources = [ "cards/AU8820.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/AU8820.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AU8820.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/FireWave.conf") {
+      sources = [ "cards/FireWave.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/FireWave.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/FireWave.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ENS1371.conf") {
+      sources = [ "cards/ENS1371.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ENS1371.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ENS1371.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/VX222.conf") {
+      sources = [ "cards/VX222.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/VX222.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VX222.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/CMI8788.conf") {
+      sources = [ "cards/CMI8788.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/CMI8788.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8788.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/pistachio-card.conf") {
+      sources = [ "cards/pistachio-card.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/pistachio-card.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/pistachio-card.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/CMI8338-SWIEC.conf") {
+      sources = [ "cards/CMI8338-SWIEC.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/CMI8338-SWIEC.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8338-SWIEC.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/CMI8338.conf") {
+      sources = [ "cards/CMI8338.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/CMI8338.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8338.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ATIIXP-MODEM.conf") {
+      sources = [ "cards/ATIIXP-MODEM.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ATIIXP-MODEM.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ATIIXP-MODEM.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/AU8830.conf") {
+      sources = [ "cards/AU8830.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/AU8830.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AU8830.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ATIIXP.conf") {
+      sources = [ "cards/ATIIXP.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ATIIXP.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ATIIXP.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/TRID4DWAVENX.conf") {
+      sources = [ "cards/TRID4DWAVENX.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/TRID4DWAVENX.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/TRID4DWAVENX.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/GUS.conf") {
+      sources = [ "cards/GUS.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/GUS.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/GUS.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ATIIXP-SPDMA.conf") {
+      sources = [ "cards/ATIIXP-SPDMA.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ATIIXP-SPDMA.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ATIIXP-SPDMA.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/AU8810.conf") {
+      sources = [ "cards/AU8810.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/AU8810.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AU8810.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/aliases.conf") {
+      sources = [ "cards/aliases.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/aliases.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/aliases.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/VIA686A.conf") {
+      sources = [ "cards/VIA686A.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/VIA686A.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA686A.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/CMI8738-MC8.conf") {
+      sources = [ "cards/CMI8738-MC8.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/CMI8738-MC8.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8738-MC8.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/Aureon51.conf") {
+      sources = [ "cards/Aureon51.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/Aureon51.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Aureon51.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ENS1370.conf") {
+      sources = [ "cards/ENS1370.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ENS1370.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ENS1370.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/Loopback.conf") {
+      sources = [ "cards/Loopback.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/Loopback.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Loopback.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/Maestro3.conf") {
+      sources = [ "cards/Maestro3.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/Maestro3.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Maestro3.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/FWSpeakers.conf") {
+      sources = [ "cards/FWSpeakers.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/FWSpeakers.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/FWSpeakers.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/VIA8233A.conf") {
+      sources = [ "cards/VIA8233A.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/VIA8233A.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA8233A.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/Audigy.conf") {
+      sources = [ "cards/Audigy.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/Audigy.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Audigy.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/Echo_Echo3G.conf") {
+      sources = [ "cards/Echo_Echo3G.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/Echo_Echo3G.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Echo_Echo3G.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ICH.conf") {
+      sources = [ "cards/ICH.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ICH.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICH.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/VIA8237.conf") {
+      sources = [ "cards/VIA8237.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/VIA8237.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA8237.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ES1968.conf") {
+      sources = [ "cards/ES1968.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ES1968.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ES1968.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/EMU10K1.conf") {
+      sources = [ "cards/EMU10K1.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/EMU10K1.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/EMU10K1.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ICH4.conf") {
+      sources = [ "cards/ICH4.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ICH4.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICH4.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ICE1712.conf") {
+      sources = [ "cards/ICE1712.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ICE1712.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICE1712.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/PC-Speaker.conf") {
+      sources = [ "cards/PC-Speaker.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/PC-Speaker.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PC-Speaker.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/EMU10K1X.conf") {
+      sources = [ "cards/EMU10K1X.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/EMU10K1X.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/EMU10K1X.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/RME9652.conf") {
+      sources = [ "cards/RME9652.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/RME9652.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/RME9652.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/YMF744.conf") {
+      sources = [ "cards/YMF744.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/YMF744.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/YMF744.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/CA0106.conf") {
+      sources = [ "cards/CA0106.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/CA0106.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CA0106.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ICH-MODEM.conf") {
+      sources = [ "cards/ICH-MODEM.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ICH-MODEM.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICH-MODEM.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/VXPocket440.conf") {
+      sources = [ "cards/VXPocket440.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/VXPocket440.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VXPocket440.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/PMacToonie.conf") {
+      sources = [ "cards/PMacToonie.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/PMacToonie.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PMacToonie.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/PMac.conf") {
+      sources = [ "cards/PMac.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/PMac.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PMac.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/vc4-hdmi.conf") {
+      sources = [ "cards/vc4-hdmi.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/vc4-hdmi.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/vc4-hdmi.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/Audigy2.conf") {
+      sources = [ "cards/Audigy2.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/Audigy2.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Audigy2.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/CS46xx.conf") {
+      sources = [ "cards/CS46xx.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/CS46xx.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CS46xx.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/RME9636.conf") {
+      sources = [ "cards/RME9636.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/RME9636.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/RME9636.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/NFORCE.conf") {
+      sources = [ "cards/NFORCE.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/NFORCE.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/NFORCE.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/PS3.conf") {
+      sources = [ "cards/PS3.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/PS3.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/PS3.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/FM801.conf") {
+      sources = [ "cards/FM801.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/FM801.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/FM801.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/SI7018.conf") {
+      sources = [ "cards/SI7018.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/SI7018.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/SI7018.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/SB-XFi.conf") {
+      sources = [ "cards/SB-XFi.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/SB-XFi.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/SB-XFi.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/VXPocket.conf") {
+      sources = [ "cards/VXPocket.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/VXPocket.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VXPocket.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/ICE1724.conf") {
+      sources = [ "cards/ICE1724.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/ICE1724.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/ICE1724.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/AACI.conf") {
+      sources = [ "cards/AACI.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/AACI.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/AACI.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/USB-Audio.conf") {
+      sources = [ "cards/USB-Audio.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/USB-Audio.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/USB-Audio.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/CMI8738-MC6.conf") {
+      sources = [ "cards/CMI8738-MC6.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/CMI8738-MC6.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/CMI8738-MC6.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/HDA-Intel.conf") {
+      sources = [ "cards/HDA-Intel.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/HDA-Intel.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/HDA-Intel.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/HdmiLpeAudio.conf") {
+      sources = [ "cards/HdmiLpeAudio.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/HdmiLpeAudio.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/HdmiLpeAudio.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/Aureon71.conf") {
+      sources = [ "cards/Aureon71.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/Aureon71.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/Aureon71.conf" ]
+
+    copy("alsa-lib-prebuilt-cards/VIA8233.conf") {
+      sources = [ "cards/VIA8233.conf" ]
+      outputs = [ "$root_out_dir/system/etc/cards/VIA8233.conf" ]
+
+    }
+    alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA8233.conf" ]
+
+    group("alsa-lib-prebuilt-all") {
+      deps = alsa_lib_prebuilt_all
+    }
+} else {
 alsa_lib_prebuilt_all = []
 
 ohos_prebuilt_etc("alsa-lib-prebuilt-smixer.conf") {
@@ -718,4 +1279,5 @@ alsa_lib_prebuilt_all += [ ":alsa-lib-prebuilt-cards/VIA8233.conf" ]
 
 group("alsa-lib-prebuilt-all") {
   deps = alsa_lib_prebuilt_all
+}
 }

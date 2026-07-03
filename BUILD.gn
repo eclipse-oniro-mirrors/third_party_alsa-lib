@@ -11,7 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/ndk/ndk.gni")
+  import("libasound_src.gni")
+} else {
+  import("//build/ohos.gni")
+}
 
 declare_args() {
   alsa_lib_feature_config_enable = false
@@ -68,6 +74,24 @@ config("alsa_lib_config") {
   }
 }
 
+if (defined(ohos_lite)) {
+  shared_library("libasound") {
+    sources = libasound_sources
+    public_configs = [ ":alsa_lib_header" ]
+    cflags = libasound_cflags
+    deps = [
+      # conf files
+      "src/conf:alsa-lib-prebuilt-all",
+    ]
+    outdir = rebase_path("$root_out_dir")
+    ldflags = [
+      "-L$outdir",
+    ]
+  }
+  group("asound_shared") {
+    deps = [ ":libasound" ]
+  }
+} else {
 ohos_shared_library("libasound") {
   sources = [
     "//third_party/alsa-lib/src/async.c",
@@ -331,4 +355,5 @@ ohos_shared_library("libalsa_midi") {
   install_enable = true
   part_name = "alsa-lib"
   subsystem_name = "thirdparty"
+}
 }
