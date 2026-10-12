@@ -296,8 +296,12 @@ size_t snd_strlcat(char *dst, const char *src, size_t size);
 
 /* We want the .gnu.warning.SYMBOL section to be unallocated.  */
 #  ifdef HAVE_ASM_PREVIOUS_DIRECTIVE
-#   define __make_section_unallocated(section_string)	\
-  asm (".section " section_string "\n\t.previous");
+	#ifdef ALSALIB_LITE
+	#define __make_section_unallocated(section_string)
+	#else
+	#define __make_section_unallocated(section_string) \
+		asm (".section " section_string "\n\t.previous");
+	#endif
 #  elif defined HAVE_ASM_POPSECTION_DIRECTIVE
 #   define __make_section_unallocated(section_string)	\
   asm (".pushsection " section_string "\n\t.popsection");
