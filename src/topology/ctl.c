@@ -1227,7 +1227,7 @@ int tplg_decode_control_mixer1(snd_tplg_t *tplg,
 
 	tplg_log(tplg, 'D', pos, "mixer: size %d TLV size %d private size %d",
 		 mc->size, mc->hdr.tlv.size, mc->priv.size);
-	if (size != mc->size + mc->priv.size) {
+	if (size != (size_t)mc->size + (size_t)mc->priv.size) {
 		SNDERR("mixer: unexpected element size %d", size);
 		return -EINVAL;
 	}
@@ -1306,7 +1306,7 @@ next:
 	}
 	INIT_LIST_HEAD(&heap);
 	mc = bin;
-	size2 = mc->size + mc->priv.size;
+	size2 = (size_t)mc->size + (size_t)mc->priv.size;
 	if (size2 > size) {
 		SNDERR("mixer: wrong element size (%d, priv %d)",
 		       mc->size, mc->priv.size);
@@ -1409,7 +1409,7 @@ next:
 	}
 	INIT_LIST_HEAD(&heap);
 	ec = bin;
-	size2 = ec->size + ec->priv.size;
+	size2 = (size_t)ec->size + (size_t)ec->priv.size;
 	if (size2 > size) {
 		SNDERR("enum: wrong element size (%d, priv %d)",
 		       ec->size, ec->priv.size);
@@ -1452,7 +1452,7 @@ int tplg_decode_control_bytes1(snd_tplg_t *tplg,
 
 	tplg_log(tplg, 'D', pos, "control bytes: size %d private size %d",
 		 bc->size, bc->priv.size);
-	if (size != bc->size + bc->priv.size) {
+	if (size != (size_t)bc->size + (size_t)bc->priv.size) {
 		SNDERR("bytes: unexpected element size %d", size);
 		return -EINVAL;
 	}
@@ -1499,7 +1499,7 @@ next:
 		return -EINVAL;
 	}
 	bc = bin;
-	size2 = bc->size + bc->priv.size;
+	size2 = (size_t)bc->size + (size_t)bc->priv.size;
 	if (size2 > size) {
 		SNDERR("bytes: wrong element size (%d, priv %d)",
 		       bc->size, bc->priv.size);
